@@ -26,7 +26,7 @@
 
 ## What is TronWeb?
 
-__[Tron Web - Developer Document](https://developers.tron.network/docs/tron-web-intro)__
+__[Tron Web - Developer Document](https://developers.tron.network/docs/tronweb-1)__
 
 TronWeb aims to deliver a unified, seamless development experience influenced by Ethereum's [Web3](https://github.com/ethereum/web3.js/) implementation. We have taken the core ideas and expanded upon it to unlock the functionality of TRON's unique feature set along with offering new tools for integrating DApps in the browser, Node.js and IoT devices.
 
@@ -172,6 +172,9 @@ In order to contribute you can
 
 ## Recent History
 
+__4.3.0__
+- Support `_signTypedData`
+
 __4.2.0__
 - Add the name key when the `call()` and `send()` methods has only one return value
 - Optimize the `TriggerConstantContract()` method
@@ -279,7 +282,7 @@ __2.5.4__
 * Adds cache in Trx to cache Contracts locally and make the process more efficient
 
 __2.5.2__
-* Adds static methods `Trx.signString` and `Trx.verifySignature
+* Adds static methods `Trx.signString` and `Trx.verifySignature`
 
 __2.5.0__
 * Allows freeBandwidth, freeBandwidthLimit, frozenAmount and frozenDuration to be zero

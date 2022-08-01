@@ -1202,6 +1202,9 @@ describe('TronWeb Instance', function () {
 });
 
 describe("#testTronGrid", function () {
+    // Temporary stop testing api key because test server is closed
+    return
+    
     describe("#testTronGridApiKey", function () {
         it("should add the parameter TRON-PRO-API-KEY=Key to the header of the request", async function () {
             const tronWeb = tronWebBuilder.createInstance({
