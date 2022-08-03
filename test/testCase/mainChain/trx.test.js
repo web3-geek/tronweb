@@ -9,6 +9,9 @@ const chai = require('chai');
 const assert = chai.assert;
 const _ = require('lodash');
 const util = require('util');
+const {typedDataTest1} = require('../util/contracts');
+const { loadTests } = require('../util/disk-utils');
+
 const {
     ADDRESS_BASE58,
     PRIVATE_KEY,
@@ -369,6 +372,7 @@ describe('TronWeb.trx', function () {
         });
 
         describe("#signTypedData", async function () {
+            tronWeb = tronWebBuilder.createInstance();
 
             // All properties on a domain are optional
             const domain = {
@@ -422,7 +426,7 @@ describe('TronWeb.trx', function () {
                 const signature = await tronWeb.trx._signTypedData(domain, types, value);
                 const result = await tronWeb.trx.verifyTypedData(domain, types, value, signature);
 
-                assert.equal(signature, '0xb98a61f301a383be6b078fa602ebdd76294302e6bab51cd4bcb3e4f241e7cae662ac21b2e95d8db637fa5db9dd38f2e7d1236e8f2ed3ee1d0e80bac641578f191c');
+                assert.equal(signature, '0x6d96635016cff6cd8a4ef215e99d7549d9e0c8d2970caa90cab0d722001e55e558b8293b496907c87aef410ce9e6db14f5ae5fc31e799e6222a565784e5e3fcf1b');
                 assert.isTrue(result);
 
                 tronWeb.trx._signTypedData(domain, types, value, (err, signature) => {
@@ -438,7 +442,7 @@ describe('TronWeb.trx', function () {
                 const idx = 14;
 
                 const signature = TronWeb.Trx._signTypedData(domain, types, value, accounts.pks[idx]);
-
+                //Convert to TRON address
                 const tDomain = {
                     ...domain,
                     verifyingContract: 'TUe6BwpA7sVTDKaJQoia7FWZpC9sK8WM2t',
@@ -483,6 +487,159 @@ describe('TronWeb.trx', function () {
                     console.log(error)
                 }
             });
+
+            it('shoule be consistent with the contract',async function () {
+                const option = {
+                    abi: typedDataTest1.abi,
+                    bytecode: typedDataTest1.bytecode,
+                    parameters: [],
+                    feeLimit: 1000e6
+                };
+                const createTransaction = await tronWeb.transactionBuilder.createSmartContract(option, ADDRESS_BASE58);
+                const createTx = await broadcaster.broadcaster(null, PRIVATE_KEY, createTransaction);
+                assert.equal(createTx.transaction.txID.length, 64);
+                let createInfo;
+                while (true) {
+                    createInfo = await tronWeb.trx.getTransactionInfo(createTx.transaction.txID);
+                    if (Object.keys(createInfo).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        console.log("createInfo:" + util.inspect(createInfo))
+                        break;
+                    }
+                }
+                contractAddress = createInfo.contract_address;
+                // console.log("contractAddress:" + contractAddress);
+                const signatureO = await tronWeb.trx._signTypedData(domain, types, value,accounts.pks[1]);
+                const signature = signatureO.slice(2);
+                const functionSelector =
+                    'verifyMail(address,((string,address,trcToken),(string,address,trcToken[]),string,address[],trcToken,trcToken[]),uint8,bytes32,bytes32)';
+                const options = {
+                    funcABIV2: {
+                        inputs: [
+                            {
+                                internalType: 'address',
+                                name: 'sender',
+                                type: 'address'
+                            },
+                            {
+                                components: [
+                                    {
+                                        components: [
+                                            {
+                                                internalType: 'string',
+                                                name: 'name',
+                                                type: 'string'
+                                            },
+                                            {
+                                                internalType: 'address',
+                                                name: 'wallet',
+                                                type: 'address'
+                                            },
+                                            {
+                                                internalType: 'trcToken',
+                                                name: 'trcTokenId',
+                                                type: 'trcToken'
+                                            }
+                                        ],
+                                        internalType: 'struct TIP712.FromPerson',
+                                        name: 'from',
+                                        type: 'tuple'
+                                    },
+                                    {
+                                        components: [
+                                            {
+                                                internalType: 'string',
+                                                name: 'name',
+                                                type: 'string'
+                                            },
+                                            {
+                                                internalType: 'address',
+                                                name: 'wallet',
+                                                type: 'address'
+                                            },
+                                            {
+                                                internalType: 'trcToken[]',
+                                                name: 'trcTokenArr',
+                                                type: 'trcToken[]'
+                                            }
+                                        ],
+                                        internalType: 'struct TIP712.ToPerson',
+                                        name: 'to',
+                                        type: 'tuple'
+                                    },
+                                    {
+                                        internalType: 'string',
+                                        name: 'contents',
+                                        type: 'string'
+                                    },
+                                    {
+                                        internalType: 'address[]',
+                                        name: 'tAddr',
+                                        type: 'address[]'
+                                    },
+                                    {
+                                        internalType: 'trcToken',
+                                        name: 'trcTokenId',
+                                        type: 'trcToken'
+                                    },
+                                    {
+                                        internalType: 'trcToken[]',
+                                        name: 'trcTokenArr',
+                                        type: 'trcToken[]'
+                                    }
+                                ],
+                                internalType: 'struct TIP712.Mail',
+                                name: 'mail',
+                                type: 'tuple'
+                            },
+                            {
+                                internalType: 'uint8',
+                                name: 'v',
+                                type: 'uint8'
+                            },
+                            {
+                                internalType: 'bytes32',
+                                name: 'r',
+                                type: 'bytes32'
+                            },
+                            {
+                                internalType: 'bytes32',
+                                name: 's',
+                                type: 'bytes32'
+                            }
+                        ],
+                        name: 'verifyMail',
+                        outputs: [
+                            {
+                                internalType: 'bool',
+                                name: '',
+                                type: 'bool'
+                            }
+                        ],
+                        stateMutability: 'view',
+                        type: 'function'
+                    },
+                    parametersV2: [
+                        accounts.b58[1],
+                        [
+                            ['Cow', '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826', 1002000],
+                            ['Bob', '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB', [1002000, 1002000]],
+                            'Hello, Bob!',
+                            ['0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB', '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB'],
+                            1002000,
+                            [1002000, 1002000]
+                        ],
+                        `0x${signature.slice(128, 130)}`,
+                        `0x${signature.slice(0, 64)}`,
+                        `0x${signature.slice(64, 128)}`
+                    ]
+                };
+                const result = await tronWeb.transactionBuilder.triggerSmartContract(contractAddress, functionSelector, { _isConstant: true, ...options }, []);
+                // console.log('testVerify :', tronWeb.address.toHex(accounts.b58[1]), result.constant_result[0]);
+                assert.equal(result.constant_result[0], '0000000000000000000000000000000000000000000000000000000000000001');
+            })
 
         });
 

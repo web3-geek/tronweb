@@ -1,7 +1,9 @@
 const chai = require('chai');
-const tronWebBuilder = require('../helpers/tronWebBuilder');
-const { loadTests } = require('../testcases/src/disk-utils');
+const tronWebBuilder = require('../util/tronWebBuilder');
+const { loadTests } = require('../util/disk-utils');
 const assert = chai.assert;
+const {ADDRESS_BASE58,PRIVATE_KEY} = require('../util/config');
+
 
 describe('TronWeb.utils.typedData', function () {
     describe('#EIP-712', function () {
@@ -37,6 +39,21 @@ describe('TronWeb.utils.typedData', function () {
             });
         });
     });
+
+    describe('#EIP-712 Signature and Verification',async function () {
+        const TronWeb = tronWebBuilder.TronWeb;
+        tronWeb = tronWebBuilder.createInstance();
+        const tests = loadTests('eip712');
+        tests.forEach( (test) => {
+            it(`encoding ${test.name} Signature and Verification`,async function () {
+                const signature = await tronWeb.trx._signTypedData(test.domain, test.types, test.data, PRIVATE_KEY);
+                const result = await tronWeb.trx.verifyTypedData(test.domain, test.types, test.data, signature,ADDRESS_BASE58);
+                assert.isTrue(signature.startsWith('0x'));
+                assert.isTrue(result);
+            });
+        });
+    });
+
 
     describe('#EIP-712 with trcToken', function () {
         // https://nile.tronscan.io/#/contract/TRHsc32MH4CLJf9VMhMjW6M9VgyvN85ku3/code
