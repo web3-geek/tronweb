@@ -54,16 +54,16 @@ describe('TronWeb.utils.typedData', function () {
         });
     });
 
-
     describe('#EIP-712 with trcToken', function () {
-        // https://nile.tronscan.io/#/contract/TRHsc32MH4CLJf9VMhMjW6M9VgyvN85ku3/code
+        //bytecode from https://nile.tronscan.org/#/contract/TBsRXfm94zoXVc2ZayZpc25Y2VEDmeciJ8/code
         const TronWeb = tronWebBuilder.TronWeb;
 
         const domain = {
             name: 'TrcToken Test',
             version: '1',
             chainId: '0xd698d4192c56cb6be724a558448e2684802de4d6cd8690dc',
-            verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
+            verifyingContract: '0x5ab90009b529c5406b4f8a6fc4dab8a2bc778c75',
+            salt: "0xf2d857f4a3edcb9b78b4d503bfe733db1e3f6cdc2b7971ee739626c97e86a558",
         };
 
         const types = {
@@ -95,13 +95,13 @@ describe('TronWeb.utils.typedData', function () {
             },
             to: {
                 name: 'Bob',
-                wallet: '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB',
+                wallet: '0xd1e7a6bc354106cb410e65ff8b181c600ff14292',
                 trcTokenArr: ['1002000', '1002000'],
             },
             contents: 'Hello, Bob!',
             tAddr: [
-                '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB',
-                '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB',
+                '0xd1e7a6bc354106cb410e65ff8b181c600ff14292',
+                '0xd1e7a6bc354106cb410e65ff8b181c600ff14292',
             ],
             trcTokenId: '1002000',
             trcTokenArr: ['1002000', '1002000'],
@@ -110,7 +110,7 @@ describe('TronWeb.utils.typedData', function () {
         it('should be the correct hash domain', function () {
             assert.equal(
                 TronWeb.utils._TypedDataEncoder.hashDomain(domain),
-                '0x23ce0ffcd4ff9a13936b4f1210884749acd9373a333dd7faa43f4045bb3aa1f7'
+                '0x386c29f5a78395fbf19723fa491bd1a28ea8d1036d653c28cb49563ffca3ec00'
             );
         });
 
@@ -129,19 +129,48 @@ describe('TronWeb.utils.typedData', function () {
                     types,
                     value.to
                 ),
-                '0xf49c4819cbb0a7fbab3d7223830bbd2a2121cadb3139a59acd0c7fe2ac3a9ce9'
+                '0xcf70da7edc68556245231d76401fdbc5622e3388466e0a088e668766879f2404'
             );
             assert.equal(
                 TronWeb.utils._TypedDataEncoder.hashStruct('Mail', types, value),
-                '0xf2f2a76e94f3c517b1e4c263854df0ef926aa17919b880a15d0ccf3ea121573c'
+                '0x5f3caedfeb1e096d359db31f0924f23acdfc72f21e5f3c59af3eec03cdf2a5f7'
             );
         });
 
         it('should be the correct hash', function () {
             assert.equal(
                 TronWeb.utils._TypedDataEncoder.hash(domain, types, value),
-                '0x15a2ddfbd93ad048b6c1391659543b5e0dd5799cde747e219cbb07c2c3badd09'
+                '0x659ab4906c8bff9cb393df578d620fb8cd7a2b6544e861896a3da5cff7a73548'
             );
         });
+
+        it('Change parameters ,should be the correct hash',function () {
+            const value1 = {
+                from: {
+                    name: 'Cow----\'\"\\',
+                    wallet: '0xCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826',
+                    trcTokenId: '1002000',
+                },
+                to: {
+                    name: 'Bob!@@#$%%^^&*())+{}{].,,',
+                    wallet: '0xd1e7a6bc354106cb410e65ff8b181c600ff14292',
+                    trcTokenArr: ['1002000', '1002000'],
+                },
+                contents: 'Hello, ___====$$###^&**!@@Bob!',
+                tAddr: [
+                    '0xd1e7a6bc354106cb410e65ff8b181c600ff14292',
+                    '0xd1e7a6bc354106cb410e65ff8b181c600ff14292',
+                ],
+                trcTokenId: '1002000',
+                trcTokenArr: ['1002000', '1002000'],
+            };
+            assert.equal(
+                TronWeb.utils._TypedDataEncoder.hash(domain, types, value1),
+                '0xb3857c4712b229ead81002827194dc5070036238a338d679972e5c3aef687d51'
+            );
+
+        })
     });
+
+
 });
