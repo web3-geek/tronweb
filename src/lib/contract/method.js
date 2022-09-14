@@ -101,11 +101,6 @@ export default class Method {
         if (!this.contract.deployed)
             return callback('Calling smart contracts requires you to load the contract first');
 
-        const {stateMutability} = this.abi;
-
-        if (!['pure', 'view'].includes(stateMutability.toLowerCase()))
-            return callback(`Methods with state mutability "${stateMutability}" must use send()`);
-
         options = {
             ...this.defaultOptions,
             from: this.tronWeb.defaultAddress.hex,
@@ -328,6 +323,11 @@ export default class Method {
                     blockNumber: 'latest',
                     filters: options.filters
                 }
+
+                if(options.size) {
+                    params.size = options.size;
+                }
+                
                 if (options.resourceNode) {
                     if (/full/i.test(options.resourceNode))
                         params.onlyUnconfirmed = true
