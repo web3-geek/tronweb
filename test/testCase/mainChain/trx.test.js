@@ -16,10 +16,13 @@ const {
     ADDRESS_BASE58,
     PRIVATE_KEY,
     getTokenOptions,
+    FULL_NODE_API,
     WITNESS_ACCOUNT,
     WITNESS_KEY,
 } = require('../util/config');
 const testRevertContract = require('../util/contracts').testRevert;
+const messageCases = require('../../testcases/src/sign-message');
+const tests = messageCases.tests;
 
 describe('TronWeb.trx', function () {
 
@@ -321,10 +324,21 @@ describe('TronWeb.trx', function () {
 
             const idx = 14;
 
-            it('should sign a hex string message', async function () {
+            it.only('sign a hex string message', async function () {
                 const hexMsg = '0xe66f4c8f323229131006ad3e4a2ca65dfdf339f0';
-                const signedMsg = await tronWeb.trx.sign(hexMsg, accounts.pks[idx]);
+                const signedMsg = await tronWeb.trx.signMessage(hexMsg, accounts.pks[idx]);
                 assert.isTrue(signedMsg.startsWith('0x'));
+                const signedMsg2 = await tronWeb.trx.signMessageV2(hexMsg, accounts.pks[idx]);
+                console.log("signedMsg:"+signedMsg)
+                console.log("signedMsg2:"+signedMsg2)
+            });
+            it.only('sign a string message', async function () {
+                const hexMsg = 'e66f4c8f323229131006ad3e4a2ca65dfdf339f0';
+                const signedMsg = await tronWeb.trx.signMessage(hexMsg, accounts.pks[idx]);
+                assert.isTrue(signedMsg.startsWith('0x'));
+                const signedMsg2 = await tronWeb.trx.signMessageV2(hexMsg, accounts.pks[idx]);
+                console.log("signedMsg:"+signedMsg)
+                console.log("signedMsg2:"+signedMsg2)
             });
 
             it('should throw expected hex message input error', async function () {
@@ -370,6 +384,45 @@ describe('TronWeb.trx', function () {
                 );
             });
         });
+
+        describe("#signMessageV2", async function() {
+            tests.forEach(function(test) {
+                it('signs a message "' + test.name + '"', async function () {
+                    const tronWeb = new TronWeb({ fullHost: FULL_NODE_API }, test.privateKey)
+                    const signature = await tronWeb.trx.signMessageV2(test.message);
+                    assert.equal(signature, test.signature, 'computes message signature');
+                });
+            });
+        });
+
+        describe("#verifyMessageV2", async function() {
+            tests.forEach(function(test) {
+                it('signs a message "' + test.name + '"', async function () {
+                    const tronWeb = new TronWeb({ fullHost: FULL_NODE_API }, test.privateKey)
+                    const address = await tronWeb.trx.verifyMessageV2(test.message, test.signature);
+                    assert.equal(address, test.address, 'verifies message signature');
+                });
+            });
+        });
+
+        /*describe.only("#signForHasVisible", async function () {
+     it('sign', async function () {
+         const sss = await tronWeb.transactionBuilder.sendTrx('419311b30b2b95d1a59222912c98ac55b09ab06eba', 10);
+         console.log("sss: "+util.inspect(sss,true,null,true))
+
+         let transactionStr = "{\"visible\":false,\"txID\":\"4f0e236ea8035b40f15bf00acf595a5477e86a57b5deb7a6de4c7e54f190852f\",\"raw_data\":{\"contract\":[{\"parameter\":{\"value\":{\"amount\":1000,\"owner_address\":\"415624c12e308b03a1a6b21d9b86e3942fac1ab92b\",\"to_address\":\"419a9005b1ad8cacbf25d2cedea2b10cfd4b73caec\"},\"type_url\":\"type.googleapis.com/protocol.TransferContract\"},\"type\":\"TransferContract\"}],\"ref_block_bytes\":\"1faa\",\"ref_block_hash\":\"dee6d4cb4ab43f4d\",\"expiration\":1628245065000,\"timestamp\":1628245005920},\"raw_data_hex\":\"0a021faa2208dee6d4cb4ab43f4d40a8fadfd7b12f5a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b1215419a9005b1ad8cacbf25d2cedea2b10cfd4b73caec18e80770e0acdcd7b12f\"}\n";
+         console.log("transactionStr: "+util.inspect(transactionStr,true,null,true))
+
+         // broadcast update transaction
+         const signedUpdateTransaction = await tronWeb.trx.sign(
+             transactionStr,PRIVATE_KEY, false,false,false);
+         console.log("signedUpdateTransaction: "+util.inspect(signedUpdateTransaction,true,null,true))
+
+         const result = await tronWeb.trx.broadcast(signedUpdateTransaction);
+         await wait(3);
+         console.log("result: "+util.inspect(result,true,null,true))
+     });
+ });*/
 
         describe("#multiSignTransaction", async function () {
 
@@ -1828,22 +1881,4 @@ describe('TronWeb.trx', function () {
             );
         });
     });
-    /*describe.only("#signForHasVisible", async function () {
-        it('sign', async function () {
-            const sss = await tronWeb.transactionBuilder.sendTrx('419311b30b2b95d1a59222912c98ac55b09ab06eba', 10);
-            console.log("sss: "+util.inspect(sss,true,null,true))
-
-            let transactionStr = "{\"visible\":false,\"txID\":\"4f0e236ea8035b40f15bf00acf595a5477e86a57b5deb7a6de4c7e54f190852f\",\"raw_data\":{\"contract\":[{\"parameter\":{\"value\":{\"amount\":1000,\"owner_address\":\"415624c12e308b03a1a6b21d9b86e3942fac1ab92b\",\"to_address\":\"419a9005b1ad8cacbf25d2cedea2b10cfd4b73caec\"},\"type_url\":\"type.googleapis.com/protocol.TransferContract\"},\"type\":\"TransferContract\"}],\"ref_block_bytes\":\"1faa\",\"ref_block_hash\":\"dee6d4cb4ab43f4d\",\"expiration\":1628245065000,\"timestamp\":1628245005920},\"raw_data_hex\":\"0a021faa2208dee6d4cb4ab43f4d40a8fadfd7b12f5a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b1215419a9005b1ad8cacbf25d2cedea2b10cfd4b73caec18e80770e0acdcd7b12f\"}\n";
-            console.log("transactionStr: "+util.inspect(transactionStr,true,null,true))
-
-            // broadcast update transaction
-            const signedUpdateTransaction = await tronWeb.trx.sign(
-                transactionStr,PRIVATE_KEY, false,false,false);
-            console.log("signedUpdateTransaction: "+util.inspect(signedUpdateTransaction,true,null,true))
-
-            const result = await tronWeb.trx.broadcast(signedUpdateTransaction);
-            await wait(3);
-            console.log("result: "+util.inspect(result,true,null,true))
-        });
-    });*/
 });

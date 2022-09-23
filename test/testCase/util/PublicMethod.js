@@ -544,6 +544,10 @@ const to64String = async (str) =>{
     return sres;;
 }
 
+const equalIgnoreCase = async (str1, str2) =>{
+    assert.equal(str1.toUpperCase(), str2.toUpperCase());
+}
+
 module.exports = {
     reduce,
     sumBigNumber,
@@ -566,5 +570,6 @@ module.exports = {
     mappingTrc721Contract,
     mintTrc721,
     deployContract,
-    to64String
+    to64String,
+    equalIgnoreCase
 }

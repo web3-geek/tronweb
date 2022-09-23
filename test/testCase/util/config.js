@@ -148,10 +148,10 @@ rH4WZ2xKqbSvQNcyrdAP5TUORcJWc7zg6GCkRJdjXPOqk78n4tDmh2jtG826DAwY
             fullNode: 'http://39.107.81.225:9190',
             solidityNode: 'http://39.107.81.225:9197',
             eventServer: 'http://39.107.81.225:9193',
-            mainGatewayAddress: 'TQkNERN1Rqrn5y9iS4UJ2XGLYnfBRYsEPD',
-            mainGatewayAddress_hex: '41a21c2f33c92d06f81f1b88a367245abd07856554',
-            sideGatewayAddress: 'TMvwL2aiUWHe3Ydx4KZGZVWbyA7M87RSHQ',
-            sideGatewayAddress_hex: '4183339828469509404084D4A87489B526897B6792',
+            mainGatewayAddress: 'TNUHYGTZ8xvrn3dG2nKHJdohWNkQT7jNio',
+            mainGatewayAddress_hex: '4189215C49269B11D332413B4FAC6E9CDDB0D60182',
+            sideGatewayAddress: 'TCZurqsi1vBudLknat7HPSf1UkANpNtxij',
+            sideGatewayAddress_hex: '411C8080485884EC5D015F13C30BE60577DDCC5BFE',
             sideChainId: '41F7AFFF7316CDA1E1BC9B21B7CC98BB84A4EA5510'
         }
     },
