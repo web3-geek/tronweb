@@ -276,10 +276,16 @@ describe('#contract.method', function () {
             assert.equal(util.inspect(strs), "[ [ 'q', 'w', 'e' ], stringArrayData: [ 'q', 'w', 'e' ] ]");
             assert.ok(equals(strs.stringArrayData, ["q", "w", "e"]));
             const bys = await contractInstance.getBys().call();
-            assert.equal(util.inspect(bys), "[ [ '0xf579f9c22b185800e3b6e6886ffc8584215c05a5',\n"
-                + "    '0xd9dcae335acd3d4ffd2e6915dc702a59136ab46f' ],\n"
-                + "  bytesArrayData: [ '0xf579f9c22b185800e3b6e6886ffc8584215c05a5',\n"
-                + "    '0xd9dcae335acd3d4ffd2e6915dc702a59136ab46f' ] ]");
+            assert.equal(util.inspect(bys), "[\n"
+                + "  [\n"
+                + "    '0xf579f9c22b185800e3b6e6886ffc8584215c05a5',\n"
+                + "    '0xd9dcae335acd3d4ffd2e6915dc702a59136ab46f'\n"
+                + "  ],\n"
+                + "  bytesArrayData: [\n"
+                + "    '0xf579f9c22b185800e3b6e6886ffc8584215c05a5',\n"
+                + "    '0xd9dcae335acd3d4ffd2e6915dc702a59136ab46f'\n"
+                + "  ]\n"
+                + "]");
             assert.ok(equals(bys.bytesArrayData, ["0xf579f9c22b185800e3b6e6886ffc8584215c05a5","0xd9dcae335acd3d4ffd2e6915dc702a59136ab46f"]));
         })
 
@@ -295,47 +301,61 @@ describe('#contract.method', function () {
             result = await contractInstance.changeBys(["0x60F68C9B9e50","0x298fa36a9e2ebd6d3698e552987294fa8b65cd00"]).send({shouldPollResponse:true}, PRIVATE_KEY);
             const bys = await contractInstance.getBys().call();
             assert.equal(util.inspect(result), util.inspect(bys));
-            assert.equal(util.inspect(bys), "[ [ '0x60f68c9b9e50',\n"
-                + "    '0x298fa36a9e2ebd6d3698e552987294fa8b65cd00' ],\n"
-                + "  bytesArrayData: [ '0x60f68c9b9e50',\n"
-                + "    '0x298fa36a9e2ebd6d3698e552987294fa8b65cd00' ] ]");
+            assert.equal(util.inspect(bys), "[\n"
+                + "  [ '0x60f68c9b9e50', '0x298fa36a9e2ebd6d3698e552987294fa8b65cd00' ],\n"
+                + "  bytesArrayData: [ '0x60f68c9b9e50', '0x298fa36a9e2ebd6d3698e552987294fa8b65cd00' ]\n"
+                + "]");
             assert.ok(equals(bys.bytesArrayData, ["0x60F68C9B9e50".toLowerCase(),"0x298fa36a9e2ebd6d3698e552987294fa8b65cd00"]));
 
             // data
             result = await contractInstance.changeMapAll(0,["a","s"],0,["0x60F68C9B9e50","0x298fa36a9e2ebd6d3698e552987294fa8b65cd00"],[687],[9,0,23,1],ADDRESS_BASE58,TOKEN_ID).send({shouldPollResponse:true}, PRIVATE_KEY);
-            assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x00', _isBigNumber: true },\n"
+            assert.equal(util.inspect(result), "[\n"
+                + "  BigNumber { _hex: '0x00', _isBigNumber: true },\n"
                 + "  '415624c12e308b03a1a6b21d9b86e3942fac1ab92b',\n"
-                + "  [ BigNumber { _hex: '0x09', _isBigNumber: true },\n"
+                + "  [\n"
+                + "    BigNumber { _hex: '0x09', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x00', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x17', _isBigNumber: true },\n"
-                + "    BigNumber { _hex: '0x01', _isBigNumber: true } ],\n"
+                + "    BigNumber { _hex: '0x01', _isBigNumber: true }\n"
+                + "  ],\n"
                 + "  uintData: BigNumber { _hex: '0x00', _isBigNumber: true },\n"
                 + "  addressData: '415624c12e308b03a1a6b21d9b86e3942fac1ab92b',\n"
-                + "  uintArrayDate: [ BigNumber { _hex: '0x09', _isBigNumber: true },\n"
+                + "  uintArrayDate: [\n"
+                + "    BigNumber { _hex: '0x09', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x00', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x17', _isBigNumber: true },\n"
-                + "    BigNumber { _hex: '0x01', _isBigNumber: true } ] ]");
+                + "    BigNumber { _hex: '0x01', _isBigNumber: true }\n"
+                + "  ]\n"
+                + "]");
 
             // changeMapAll2--3ceng struct
             result = await contractInstance.changeMapAll2(0,["a","s"],0,["0x60F68C9B9e50","0x298fa36a9e2ebd6d3698e552987294fa8b65cd00"],[[[687],[9,0,23,1],"TJEuSMoC7tbs99XkbGhSDk7cM1xnxR931s",1000007]]).send({shouldPollResponse:true}, PRIVATE_KEY);
-            assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x0f4247', _isBigNumber: true },\n"
+            assert.equal(util.inspect(result), "[\n"
+                + "  BigNumber { _hex: '0x0f4247', _isBigNumber: true },\n"
                 + "  '415ab90009b529c5406b4f8a6fc4dab8a2bc778c75',\n"
-                + "  [ BigNumber { _hex: '0x09', _isBigNumber: true },\n"
+                + "  [\n"
+                + "    BigNumber { _hex: '0x09', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x00', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x17', _isBigNumber: true },\n"
-                + "    BigNumber { _hex: '0x01', _isBigNumber: true } ],\n"
+                + "    BigNumber { _hex: '0x01', _isBigNumber: true }\n"
+                + "  ],\n"
                 + "  tokenData: BigNumber { _hex: '0x0f4247', _isBigNumber: true },\n"
-                + "  addressData: '415ab90009b529c5406b4f8a6fc4dab8a2bc778c75' ]");
+                + "  addressData: '415ab90009b529c5406b4f8a6fc4dab8a2bc778c75'\n"
+                + "]");
 
             // changeMapAll3--4ceng struct
             result = await contractInstance.changeMapAll3(0,["a","s"],0,["0x60F68C9B9e50","0x298fa36a9e2ebd6d3698e552987294fa8b65cd00"],[[[[67],[11,2,2323,1001],"TJEuSMoC7tbs99XkbGhSDk7cM1xnxR931s",1000007]]]).send({shouldPollResponse:true}, PRIVATE_KEY);
-            assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x0f4247', _isBigNumber: true },\n"
+            assert.equal(util.inspect(result), "[\n"
+                + "  BigNumber { _hex: '0x0f4247', _isBigNumber: true },\n"
                 + "  '415ab90009b529c5406b4f8a6fc4dab8a2bc778c75',\n"
-                + "  [ BigNumber { _hex: '0x0b', _isBigNumber: true },\n"
+                + "  [\n"
+                + "    BigNumber { _hex: '0x0b', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x02', _isBigNumber: true },\n"
                 + "    BigNumber { _hex: '0x0913', _isBigNumber: true },\n"
-                + "    BigNumber { _hex: '0x03e9', _isBigNumber: true } ],\n"
-                + "  tokenData: BigNumber { _hex: '0x0f4247', _isBigNumber: true } ]");
+                + "    BigNumber { _hex: '0x03e9', _isBigNumber: true }\n"
+                + "  ],\n"
+                + "  tokenData: BigNumber { _hex: '0x0f4247', _isBigNumber: true }\n"
+                + "]");
 
             // StructArray
             result = await contractInstance.changeStructArray([3],[4]).send({shouldPollResponse:true}, PRIVATE_KEY);
@@ -359,8 +379,10 @@ describe('#contract.method', function () {
             result = await contractInstance.changeInt(68236424).send({shouldPollResponse:true}, PRIVATE_KEY);
             const intValue = await contractInstance.getInt().call();
             assert.equal(util.inspect(result), util.inspect(intValue));
-            assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x04113488', _isBigNumber: true },\n"
-                + "  intData: BigNumber { _hex: '0x04113488', _isBigNumber: true } ]");
+            assert.equal(util.inspect(result), "[\n"
+                + "  BigNumber { _hex: '0x04113488', _isBigNumber: true },\n"
+                + "  intData: BigNumber { _hex: '0x04113488', _isBigNumber: true }\n"
+                + "]");
             assert.ok(equals(intValue.intData, 68236424));
         });
     });
@@ -415,8 +437,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x7b', _isBigNumber: true },\n"
-                    + "  intData: BigNumber { _hex: '0x7b', _isBigNumber: true } ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  BigNumber { _hex: '0x7b', _isBigNumber: true },\n"
+                    + "  intData: BigNumber { _hex: '0x7b', _isBigNumber: true }\n"
+                    + "]");
                 const dataAfter = await contractInstance.getInt().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
                 const After = parseInt(dataAfter.intData._hex, 16);
@@ -432,8 +456,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x0463', _isBigNumber: true },\n"
-                    + "  uintData: BigNumber { _hex: '0x0463', _isBigNumber: true } ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  BigNumber { _hex: '0x0463', _isBigNumber: true },\n"
+                    + "  uintData: BigNumber { _hex: '0x0463', _isBigNumber: true }\n"
+                    + "]");
                 const dataAfter = await contractInstance.getUint().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
                 const After = parseInt(dataAfter.uintData._hex, 16);
@@ -463,8 +489,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105a',\n"
-                    + "  bytes32Data: '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105a' ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105a',\n"
+                    + "  bytes32Data: '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105a'\n"
+                    + "]");
                 const dataAfter = await contractInstance.getBytes32().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
                 assert.equal(dataAfter.bytes32Data, val);
@@ -482,8 +510,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105890',\n"
-                    + "  bytesData: '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105890' ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105890',\n"
+                    + "  bytesData: '0xb55a21aaee0ce8f1c8ffaa0dbd23105cb55a21aaee0ce8f1c8ffaa0dbd23105890'\n"
+                    + "]");
 
                 const dataAfter = await contractInstance.getBytes().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
@@ -502,8 +532,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ 'b55a21aaee0ce8f1c8ff122344400403lkkhhj',\n"
-                    + "  stringData: 'b55a21aaee0ce8f1c8ff122344400403lkkhhj' ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  'b55a21aaee0ce8f1c8ff122344400403lkkhhj',\n"
+                    + "  stringData: 'b55a21aaee0ce8f1c8ff122344400403lkkhhj'\n"
+                    + "]");
 
                 const dataAfter = await contractInstance.getString().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
@@ -538,10 +570,16 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ [ BigNumber { _hex: '-0x6f', _isBigNumber: true },\n"
-                    + "    BigNumber { _hex: '0x7b', _isBigNumber: true } ],\n"
-                    + "  int64Data: [ BigNumber { _hex: '-0x6f', _isBigNumber: true },\n"
-                    + "    BigNumber { _hex: '0x7b', _isBigNumber: true } ] ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  [\n"
+                    + "    BigNumber { _hex: '-0x6f', _isBigNumber: true },\n"
+                    + "    BigNumber { _hex: '0x7b', _isBigNumber: true }\n"
+                    + "  ],\n"
+                    + "  int64Data: [\n"
+                    + "    BigNumber { _hex: '-0x6f', _isBigNumber: true },\n"
+                    + "    BigNumber { _hex: '0x7b', _isBigNumber: true }\n"
+                    + "  ]\n"
+                    + "]");
 
                 const dataAfter = await contractInstance.getInt64NegativeArray().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
@@ -561,8 +599,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ [ [ 122, 332 ], [ 991, 884 ] ],\n"
-                    + "  uint32ArrayData: [ [ 122, 332 ], [ 991, 884 ] ] ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  [ [ 122, 332 ], [ 991, 884 ] ],\n"
+                    + "  uint32ArrayData: [ [ 122, 332 ], [ 991, 884 ] ]\n"
+                    + "]");
 
                 const dataAfter = await contractInstance.getInt32Array().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
@@ -584,8 +624,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 })
-                assert.equal(util.inspect(result), "[ [ [ [BigNumber], [BigNumber] ], [ [BigNumber], [BigNumber] ] ],\n"
-                    + "  uint256ArrayData: [ [ [BigNumber], [BigNumber] ], [ [BigNumber], [BigNumber] ] ] ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  [ [ [BigNumber], [BigNumber] ], [ [BigNumber], [BigNumber] ] ],\n"
+                    + "  uint256ArrayData: [ [ [BigNumber], [BigNumber] ], [ [BigNumber], [BigNumber] ] ]\n"
+                    + "]");
 
                 const dataAfter = await contractInstance.getInt256Array().call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));
@@ -609,8 +651,10 @@ describe('#contract.method', function () {
                     tokenValue:0,
                     shouldPollResponse:true
                 });
-                assert.equal(util.inspect(result), "[ BigNumber { _hex: '0x0462', _isBigNumber: true },\n"
-                    + "  uint256Data: BigNumber { _hex: '0x0462', _isBigNumber: true } ]");
+                assert.equal(util.inspect(result), "[\n"
+                    + "  BigNumber { _hex: '0x0462', _isBigNumber: true },\n"
+                    + "  uint256Data: BigNumber { _hex: '0x0462', _isBigNumber: true }\n"
+                    + "]");
 
                 const dataAfter = await contractInstance.getMappinga(address).call();
                 assert.equal(util.inspect(result), util.inspect(dataAfter));

@@ -752,7 +752,6 @@ export default class Trx {
                 if (address !== this.tronWeb.address.toHex(transaction.raw_data.contract[0].parameter.value.owner_address))
                     return callback('Private key does not match address in transaction');
             }
-
             return callback(null,
                 utils.crypto.signTransaction(privateKey, transaction)
             );
@@ -770,8 +769,6 @@ export default class Trx {
             value: privateKey
         }
         const signingKey = new SigningKey(value);
-        console.log("signingKey.value:"+signingKey.value)
-        console.log("signingKey.privateKey:"+signingKey.privateKey)
         const messageBytes = [
             ...toUtf8Bytes(useTronHeader ? TRX_MESSAGE_HEADER : ETH_MESSAGE_HEADER),
             ...utils.code.hexStr2byteArray(message)
