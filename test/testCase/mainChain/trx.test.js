@@ -1708,8 +1708,6 @@ describe('TronWeb.trx', function () {
             const toIdx = 35;
 
             before(async function(){
-                this.timeout(20000);
-
                 let tokenNames = [];
 
                 // create token

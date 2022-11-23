@@ -163,7 +163,11 @@ describe('TronWeb.transactionBuilder', function () {
             options.precision = 4;
 
             for (let i = 0; i < 2; i++) {
-                if (i === 1) options.permissionId = 2;
+                if (i === 1) {
+                    options.permissionId = 2;
+                    options.saleStart = Date.now() + 500;
+                    options.saleEnd = Date.now() + 60000;
+                }
                 const transaction = await tronWeb.transactionBuilder.createToken(options, accounts.b58[8 + i]);
 
                 const parameter = txPars(transaction);
@@ -241,6 +245,8 @@ describe('TronWeb.transactionBuilder', function () {
             assert.equal(tokenPrecision, options.precision);
 
             options.precision = 6;
+            options.saleStart = Date.now() + 500;
+            options.saleEnd = Date.now() + 60000;
             transaction = await tronWeb.transactionBuilder.createToken(options, accounts.b58[12]);
             parameter = txPars(transaction);
             console.log("parameter: "+util.inspect(parameter,true,null,true));
@@ -252,6 +258,7 @@ describe('TronWeb.transactionBuilder', function () {
             assert.equal(parameter.value.owner_address, accounts.hex[12]);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.AssetIssueContract');
             await broadcaster.broadcaster(null, accounts.pks[12], transaction)
+            await wait(10)
             tokenList = await tronWeb.trx.getTokensIssuedByAddress(accounts.b58[12])
             tokenID = tokenList[options.name].id
             token = await tronWeb.trx.getTokenByID(tokenID)

@@ -86,7 +86,7 @@ rH4WZ2xKqbSvQNcyrdAP5TUORcJWc7zg6GCkRJdjXPOqk78n4tDmh2jtG826DAwY
             frozenDuration: 1,
             trxRatio: 10,
             tokenRatio: 2,
-            saleStart: Date.now() + 500,
+            saleStart: Date.now() + 600,
             freeBandwidth: 100,
             freeBandwidthLimit: 1000
         }
