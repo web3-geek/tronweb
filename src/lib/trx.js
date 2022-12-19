@@ -752,6 +752,7 @@ export default class Trx {
 
                 if (address !== this.tronWeb.address.toHex(transaction.raw_data.contract[0].parameter.value.owner_address))
                     return callback('Private key does not match address in transaction');
+
                 if (!txCheck(transaction)) {
                     return callback('Invalid transaction');
                 }
