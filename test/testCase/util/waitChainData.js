@@ -12,7 +12,6 @@ module.exports = async function (type, ...params) {
     let startTimestamp = Date.now();
     let timeLimit = 50000;
     do {
-        console.log("params[0]:"+params[0])
         let data;
         let isFound = false;
         try {

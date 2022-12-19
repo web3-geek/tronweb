@@ -502,7 +502,7 @@ describe('TronWeb.utils.accounts', function () {
                         await tronWeb.fromMnemonic()
                     } catch (err) {
                         let errMsg = err.message
-                        assert.notEqual(errMsg.indexOf("Cannot read properties of undefined (reading 'toLowerCase')"), -1)
+                        assert.notEqual(errMsg.indexOf("Cannot read property 'toLowerCase' of undefined"), -1)
                     }
                 });
             });

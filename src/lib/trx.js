@@ -4,6 +4,7 @@ import { keccak256, toUtf8Bytes, recoverAddress, SigningKey } from 'utils/ethers
 import { ADDRESS_PREFIX } from 'utils/address';
 import Validator from "../paramValidator";
 import injectpromise from 'injectpromise';
+import { txCheck } from '../utils/transaction';
 
 const TRX_MESSAGE_HEADER = '\x19TRON Signed Message:\n32';
 // it should be: '\x15TRON Signed Message:\n32';
@@ -667,7 +668,7 @@ export default class Trx {
     static verifyMessageV2(message, signature) {
         return utils.message.verifyMessage(message, signature);
     }
-    
+
     verifyTypedData(domain, types, value, signature, address = this.tronWeb.defaultAddress.base58, callback = false) {
         if (utils.isFunction(address)) {
             callback = address;
@@ -751,6 +752,9 @@ export default class Trx {
 
                 if (address !== this.tronWeb.address.toHex(transaction.raw_data.contract[0].parameter.value.owner_address))
                     return callback('Private key does not match address in transaction');
+                if (!txCheck(transaction)) {
+                    return callback('Invalid transaction');
+                }
             }
             return callback(null,
                 utils.crypto.signTransaction(privateKey, transaction)
@@ -786,9 +790,9 @@ export default class Trx {
 
     /**
      * sign message v2 for verified header length
-     * 
-     * @param {message to be signed, should be Bytes or string} message 
-     * @param {privateKey for signature} privateKey 
+     *
+     * @param {message to be signed, should be Bytes or string} message
+     * @param {privateKey for signature} privateKey
      * @param {reserved} options
      * @param {callback function} callback
      */
@@ -797,7 +801,7 @@ export default class Trx {
             callback = options;
             options = {};
         }
-        
+
         if (utils.isFunction(privateKey)) {
             callback = privateKey;
             privateKey = this.tronWeb.defaultPrivateKey;
@@ -898,6 +902,9 @@ export default class Trx {
 
         // sign
         try {
+            if (!txCheck(transaction)) {
+                return callback('Invalid transaction');
+            }
             return callback(null, utils.crypto.signTransaction(privateKey, transaction));
         } catch (ex) {
             callback(ex);

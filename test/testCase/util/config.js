@@ -20,6 +20,8 @@ module.exports = {
      */
     ADDRESS_HEX: '415624c12e308b03a1a6b21d9b86e3942fac1ab92b',
     ADDRESS_BASE58: 'THph9K2M2nLvkianrMGswRhz5hjSA9fuH7',
+    // ADDRESS_HEX: '412ac4526930de490bdde77f98a56bd23626e9ea6a',
+    // ADDRESS_BASE58: 'TDsLZoTfrnN4cSzsqAatYn9PRhYEwR1z6z',
     /*ADDRESS_HEX: '415ab90009b529c5406b4f8a6fc4dab8a2bc778c75',
     ADDRESS_BASE58: 'TJEuSMoC7tbs99XkbGhSDk7cM1xnxR931s',*/
     /*ADDRESS_HEX: '41d1e7a6bc354106cb410e65ff8b181c600ff14292',
@@ -31,6 +33,8 @@ module.exports = {
      */
     WITNESS_ACCOUNT: 'TB4B1RMhoPeivkj4Hebm6tttHjRY9yQFes',
     WITNESS_KEY: '369F095838EB6EED45D4F6312AF962D5B9DE52927DA9F04174EE49F9AF54BC77',
+    WITNESS_ACCOUNT2: 'TT1smsmhxype64boboU8xTuNZVCKP1w6qT',
+    WITNESS_KEY2: '9fd8e129de181ea44c6129f727a6871440169568ade002943ead0e7a16d8edac',
     UPDATED_TEST_TOKEN_OPTIONS: {
         description: 'Very useless utility token',
         url: 'https://none.example.com',
@@ -148,10 +152,10 @@ rH4WZ2xKqbSvQNcyrdAP5TUORcJWc7zg6GCkRJdjXPOqk78n4tDmh2jtG826DAwY
             fullNode: 'http://39.107.81.225:9190',
             solidityNode: 'http://39.107.81.225:9197',
             eventServer: 'http://39.107.81.225:9193',
-            mainGatewayAddress: 'TNUHYGTZ8xvrn3dG2nKHJdohWNkQT7jNio',
-            mainGatewayAddress_hex: '4189215C49269B11D332413B4FAC6E9CDDB0D60182',
-            sideGatewayAddress: 'TCZurqsi1vBudLknat7HPSf1UkANpNtxij',
-            sideGatewayAddress_hex: '411C8080485884EC5D015F13C30BE60577DDCC5BFE',
+            mainGatewayAddress: 'TH3qs3nGmpweyXXccvpSKn8EaBYbXafk6i',
+            mainGatewayAddress_hex: '414DA950A9DA5E7BCE23C6FC8EFC034272BAB91A0D',
+            sideGatewayAddress: 'TWrLwowiwSYMnVuymbrDir8C2UUy5tQshP',
+            sideGatewayAddress_hex: '41E50E5C6C9E028DD2C7EAE419F992CC20291C7956',
             sideChainId: '41F7AFFF7316CDA1E1BC9B21B7CC98BB84A4EA5510'
         }
     },

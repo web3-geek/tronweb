@@ -318,6 +318,13 @@ describe('TronWeb.trx', function () {
                 );
             });
 
+            it('should throw Invalid transaction', async function () {
+                transaction.raw_data_hex += '00';
+                await assertThrow(
+                    tronWeb.trx.sign(transaction, accounts.pks[idx]),
+                    'Invalid transaction'
+                );
+            });
         });
 
 
@@ -537,6 +544,15 @@ describe('TronWeb.trx', function () {
                 signedMsg2 = await TronWeb.Trx.signMessageV2(msg, PRIVATE_KEY);
                 assert.equal(signedMsg, signedMsg2);
             });
+            it('tests', async function() {
+                tests.forEach(function(test) {
+                    it('signs a message "' + test.name + '"', async function () {
+                        const tronWeb = new TronWeb({ fullHost: FULL_NODE_API }, test.privateKey)
+                        const signature = await tronWeb.trx.signMessageV2(test.message);
+                        assert.equal(signature, test.signature, 'computes message signature');
+                    });
+                });
+            });
         });
 
         describe("#verifyMessageV2", async function() {
@@ -586,26 +602,16 @@ describe('TronWeb.trx', function () {
                 console.log("signAddress:"+signAddress)
                 assert.equal("0xAB8deb75f43b5928161b33348EDD91FAdac24615", signAddress);
             });
+            it('tests', async function() {
+                tests.forEach(function(test) {
+                    it('signs a message "' + test.name + '"', async function () {
+                        const tronWeb = new TronWeb({ fullHost: FULL_NODE_API }, test.privateKey)
+                        const address = await tronWeb.trx.verifyMessageV2(test.message, test.signature);
+                        assert.equal(address, test.address, 'verifies message signature');
+                    });
+                });
+            });
         });
-
-        /*describe.only("#signForHasVisible", async function () {
-     it('sign', async function () {
-         const sss = await tronWeb.transactionBuilder.sendTrx('419311b30b2b95d1a59222912c98ac55b09ab06eba', 10);
-         console.log("sss: "+util.inspect(sss,true,null,true))
-
-         let transactionStr = "{\"visible\":false,\"txID\":\"4f0e236ea8035b40f15bf00acf595a5477e86a57b5deb7a6de4c7e54f190852f\",\"raw_data\":{\"contract\":[{\"parameter\":{\"value\":{\"amount\":1000,\"owner_address\":\"415624c12e308b03a1a6b21d9b86e3942fac1ab92b\",\"to_address\":\"419a9005b1ad8cacbf25d2cedea2b10cfd4b73caec\"},\"type_url\":\"type.googleapis.com/protocol.TransferContract\"},\"type\":\"TransferContract\"}],\"ref_block_bytes\":\"1faa\",\"ref_block_hash\":\"dee6d4cb4ab43f4d\",\"expiration\":1628245065000,\"timestamp\":1628245005920},\"raw_data_hex\":\"0a021faa2208dee6d4cb4ab43f4d40a8fadfd7b12f5a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b1215419a9005b1ad8cacbf25d2cedea2b10cfd4b73caec18e80770e0acdcd7b12f\"}\n";
-         console.log("transactionStr: "+util.inspect(transactionStr,true,null,true))
-
-         // broadcast update transaction
-         const signedUpdateTransaction = await tronWeb.trx.sign(
-             transactionStr,PRIVATE_KEY, false,false,false);
-         console.log("signedUpdateTransaction: "+util.inspect(signedUpdateTransaction,true,null,true))
-
-         const result = await tronWeb.trx.broadcast(signedUpdateTransaction);
-         await wait(3);
-         console.log("result: "+util.inspect(result,true,null,true))
-     });
- });*/
 
         describe("#multiSignTransaction", async function () {
 
@@ -864,11 +870,9 @@ describe('TronWeb.trx', function () {
                 } catch (e) {
                     assert.isTrue(e.indexOf('already sign transaction') != -1);
                 }
-
             });
 
             it('should multi-sign a transaction with permission error by both owner and active permission', async function () {
-
                 try {
                     const transaction = await tronWeb.transactionBuilder.freezeBalance(10e5, 3, 'BANDWIDTH', accounts.b58[ownerIdx]);
                     let signedTransaction = await tronWeb.trx.multiSign(transaction, accounts.pks[ownerIdx], 0);
@@ -878,6 +882,7 @@ describe('TronWeb.trx', function () {
                 }
 
             });
+
             it('should multi-sign a transaction with wrong permission id error', async function () {
 
                 try {
@@ -887,11 +892,19 @@ describe('TronWeb.trx', function () {
                     console.log("e:"+e);
                     assert.isTrue(e.indexOf('Permission for this, does not exist') != -1);
                 }
-
             });
 
+            it('should multi-sign a transaction with Invalid transaction error', async function () {
+                try {
+                    const transaction = await tronWeb.transactionBuilder.freezeBalance(10e5, 3, 'BANDWIDTH', accounts.b58[ownerIdx]);
+                    transaction.txID = transaction.txID + '00'
+                    await tronWeb.trx.multiSign(transaction, accounts.pks[ownerIdx], 2);
+                } catch (e) {
+                    console.log("e:"+e);
+                    assert.isTrue(e.indexOf('Invalid transaction') != -1);
+                }
+            });
         });
-
     });
 
 
@@ -2033,8 +2046,11 @@ describe('TronWeb.trx', function () {
         });
     });
 
+    /**
+     * Need to execute java-tron2.HttpTestMutiSign001.test3Broadcasthex() to get transactionHex
+     */
     describe("#broadcastHex", async function () {
-        const transactionHex = "0a84010a02edc52208a98ba5d4ea71087840d8d193ebe22f5a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b1215410eb50b3cc3f3a0c723cb8dc42f497dd43ed4c97c18e80770948d90ebe22f12415b1f89558e821cddc3f94bea7d06056eef0f2f80f9c5704c26abe2f7708b82980edae0f423d5ac4cd60b13ae62222b15fe41c6b373d1b59e5a36fd3148f5dda801"
+        const transactionHex = "0a84010a0237a62208ef616f964511258d40e0fbf2fece305a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b1215414bc3a10c181def03aaa459ba1b2be9b743e9f25718e8077087b5effece3012418753905081510ba309c66fe2b9d91b0b9c736e587d182e830bf421a98cb7b6b52f099b118530156fe6d464331f64103d756c78e90018dcae87635ba074b030eb01"
         it('should broadcast a hex transaction', async function () {
             let result = await tronWeb.trx.broadcastHex(transactionHex);
             console.log("result1: "+util.inspect(result,true,null,true))
