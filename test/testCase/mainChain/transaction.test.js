@@ -1181,8 +1181,6 @@ describe('TronWeb.utils.transaction', function () {
             let tokenNames = [];
 
             before(async function () {
-                this.timeout(20000);
-
                 const options = getTokenOptions();
                 const transaction = await tronWeb.transactionBuilder.createToken(options, accounts.hex[7]);
                 await broadcaster.broadcaster(null, accounts.pks[7], transaction);
@@ -1709,7 +1707,7 @@ describe('TronWeb.utils.transaction', function () {
         });
     });
 
-    describe.only('#txCheckWithArgs', function () {
+    describe('#txCheckWithArgs', function () {
 
         const commonAssertFalsePbWithArgs = (transaction, data, param) => {
             console.log("transaction:"+util.inspect(transaction,true,null,true))
@@ -2967,8 +2965,6 @@ describe('TronWeb.utils.transaction', function () {
             let tokenNames = [];
 
             before(async function () {
-                this.timeout(20000);
-
                 // create token
                 for (let i = idxS; i < idxE; i++) {
                     const options = getTokenOptions();
@@ -3050,6 +3046,7 @@ describe('TronWeb.utils.transaction', function () {
                 await broadcaster.broadcaster(null, accounts.pks[20], transaction);
                 await waitChainData('token', accounts.hex[20]);
                 const token = await tronWeb.trx.getTokensIssuedByAddress(accounts.hex[20]);
+                await wait(10);
                 await waitChainData('tokenById', token[Object.keys(token)[0]]['id']);
                 await broadcaster.broadcaster(null, accounts.pks[20], await tronWeb.transactionBuilder.sendToken(
                     accounts.hex[toIdx2],
@@ -3282,8 +3279,6 @@ describe('TronWeb.utils.transaction', function () {
             };
 
             before(async function () {
-                this.timeout(20000);
-
                 // create token
                 for (let i = idxS; i < idxE; i++) {
                     const options = getTokenOptions();

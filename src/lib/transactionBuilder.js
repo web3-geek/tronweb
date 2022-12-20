@@ -935,7 +935,7 @@ export default class TransactionBuilder {
         this.tronWeb[options.confirmed ? 'solidityNode' : 'fullNode'].request(`wallet${options.confirmed ? 'solidity' : ''}/trigger${options._isConstant ? 'constant' : 'smart'}contract`, args, 'post').then(transaction => resultManagerTriggerSmartContract(transaction, args, options, callback)).catch(err => callback(err));
     }
 
-    clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, callback = false) {        
+    clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, callback = false) {
         if (!callback)
             return this.injectPromise(this.clearABI, contractAddress, ownerAddress);
 
