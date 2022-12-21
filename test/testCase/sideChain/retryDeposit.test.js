@@ -166,7 +166,7 @@ describe('TronWeb Instance', function() {
             let depositTrc721Map = await publicMethod.depositTrc721(trc721Id, trc721ContractAddress);
             let depositTrc721Nonce = depositTrc721Map.get("depositNonce");
             let mTrc721BalanceAfter = await mTrc721Contract.ownerOf(trc721Id).call()
-            assert.equal(mTrc721BalanceAfter,SIDE_CHAIN.sideOptions.mainGatewayAddress_hex)
+            assert.equal(mTrc721BalanceAfter.toUpperCase(),SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase())
             await assertThrow(
                 tronWeb.sidechain.sidechain.transactionBuilder.triggerSmartContract(
                     sideChainTrc721ContractAddress,

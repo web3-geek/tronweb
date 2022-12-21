@@ -114,12 +114,6 @@ rH4WZ2xKqbSvQNcyrdAP5TUORcJWc7zg6GCkRJdjXPOqk78n4tDmh2jtG826DAwY
         solidityNode: 'http://39.107.81.225:8197',
         eventServer: 'http://39.107.81.225:8193',
         /**
-         * tronex
-         */
-        /*fullNode: 'https://testhttpapi.tronex.io',
-        solidityNode: 'https://testhttpapi.tronex.io',
-        eventServer: 'https://testhttpapi.tronex.io',*/
-        /**
          * nileex
          * mainChain:event.test.js;
          * index.test.index.js;
@@ -128,12 +122,6 @@ rH4WZ2xKqbSvQNcyrdAP5TUORcJWc7zg6GCkRJdjXPOqk78n4tDmh2jtG826DAwY
         // fullNode: 'https://api.nileex.io',
         // solidityNode: 'https://api.nileex.io',
         // eventServer: 'https://nile.trongrid.io',
-        /*fullNode: 'http://3.225.171.164:8090',
-        solidityNode: 'http://3.225.171.164:8090',
-        eventServer: 'http://3.225.171.164:8090',*/
-        /*fullNode: 'http://39.107.123.182:8590',
-        solidityNode: 'http://39.107.123.182:8591',
-        eventServer: 'http://39.107.123.182:8590',*/
         sideOptions: {
             /**
              * tronex

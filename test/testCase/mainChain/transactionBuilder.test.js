@@ -234,6 +234,7 @@ describe('TronWeb.transactionBuilder', function () {
             assert.equal(parameter.value.owner_address, accounts.hex[11]);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.AssetIssueContract');
             await broadcaster.broadcaster(null, accounts.pks[11], transaction)
+            await wait(10)
             let tokenList = await tronWeb.trx.getTokensIssuedByAddress(accounts.b58[11])
             let tokenID = tokenList[options.name].id
             let token = await tronWeb.trx.getTokenByID(tokenID)
@@ -1780,8 +1781,6 @@ describe('TronWeb.transactionBuilder', function () {
         let transaction;
         let contract;
         before(async function () {
-            this.timeout(20000);
-
             transaction = await tronWeb.transactionBuilder.createSmartContract({
                 abi: testConstant.abi,
                 bytecode: testConstant.bytecode
