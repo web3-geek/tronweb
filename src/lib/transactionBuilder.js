@@ -54,7 +54,7 @@ function resultManagerTriggerSmartContract(transaction, data, options, callback)
         );
     }
 
-    if(!options._isConstant) {
+    if(!(options._isConstant || options.estimateEnergy)) {
         const authResult = txCheckWithArgs(transaction.transaction, data, options);
         if(authResult) {
             return callback(null, transaction);
@@ -408,6 +408,318 @@ export default class TransactionBuilder {
         }
 
         this.tronWeb.fullNode.request('wallet/unfreezebalance', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
+    }
+
+    freezeBalanceV2(amount = 0, resource = "BANDWIDTH", address = this.tronWeb.defaultAddress.hex, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
+        if (utils.isFunction(address)) {
+            callback = address;
+            address = this.tronWeb.defaultAddress.hex;
+        } else if (utils.isObject(address)) {
+            options = address;
+            address = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (utils.isFunction(resource)) {
+            callback = resource;
+            resource = "BANDWIDTH";
+        }
+
+        if (!callback)
+            return this.injectPromise(this.freezeBalanceV2, amount, resource, address, options);
+
+        if (this.validator.notValid([
+            {
+                name: 'origin',
+                type: 'address',
+                value: address
+            },
+            {
+                name: 'amount',
+                type: 'integer',
+                gt: 0,
+                value: amount
+            },
+            {
+                name: 'resource',
+                type: 'resource',
+                value: resource,
+                msg: 'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY'
+            }
+        ], callback))
+            return;
+
+        const data = {
+            owner_address: toHex(address),
+            frozen_balance: parseInt(amount),
+            resource: resource
+        }
+
+        if (options && options.permissionId) {
+            data.Permission_id = options.permissionId;
+        }
+
+        this.tronWeb.fullNode.request('wallet/freezebalancev2', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
+    }
+
+    unfreezeBalanceV2(amount = 0, resource = "BANDWIDTH", address = this.tronWeb.defaultAddress.hex, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
+        if (utils.isFunction(address)) {
+            callback = address;
+            address = this.tronWeb.defaultAddress.hex;
+        } else if (utils.isObject(address)) {
+            options = address;
+            address = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (utils.isFunction(resource)) {
+            callback = resource;
+            resource = "BANDWIDTH";
+        }
+
+        if (!callback)
+            return this.injectPromise(this.unfreezeBalanceV2, amount, resource, address, options);
+
+        if (this.validator.notValid([
+            {
+                name: 'origin',
+                type: 'address',
+                value: address
+            },
+            {
+                name: 'amount',
+                type: 'integer',
+                gt: 0,
+                value: amount
+            },
+            {
+                name: 'resource',
+                type: 'resource',
+                value: resource,
+                msg: 'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY'
+            }
+        ], callback))
+            return;
+
+        const data = {
+            owner_address: toHex(address),
+            unfreeze_balance: parseInt(amount), 
+            resource: resource
+        }
+
+        if (options && options.permissionId) {
+            data.Permission_id = options.permissionId;
+        }
+
+        this.tronWeb.fullNode.request('wallet/unfreezebalancev2', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
+    }
+
+    delegateResource(amount = 0, resource = "BANDWIDTH", address = this.tronWeb.defaultAddress.hex, receiverAddress = undefined, lock = false, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
+        if (utils.isFunction(lock)) {
+            callback = lock;
+            lock = false;
+        } else if (utils.isObject(lock)) {
+            options = lock;
+            lock = false;
+        }
+
+        if (utils.isFunction(receiverAddress)) {
+            callback = receiverAddress;
+            receiverAddress = undefined;
+        } else if (utils.isObject(receiverAddress)) {
+            options = receiverAddress;
+            receiverAddress = undefined;
+        }
+
+        if (utils.isFunction(address)) {
+            callback = address;
+            address = this.tronWeb.defaultAddress.hex;
+        } else if (utils.isObject(address)) {
+            options = address;
+            address = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (utils.isFunction(resource)) {
+            callback = resource;
+            resource = "BANDWIDTH";
+        }
+
+        if (!callback)
+            return this.injectPromise(this.delegateResource, amount, resource, address, receiverAddress, lock, options);
+
+        if (this.validator.notValid([
+            {
+                name: 'origin',
+                type: 'address',
+                value: address
+            },
+            {
+                name: 'receiver',
+                type: 'address',
+                value: receiverAddress,
+                optional: true
+            },
+            {
+                name: 'amount',
+                type: 'integer',
+                gt: 0,
+                value: amount
+            },
+            {
+                name: 'resource',
+                type: 'resource',
+                value: resource,
+                msg: 'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY'
+            },
+            {
+                name: 'lock',
+                type: 'boolean',
+                value: lock,
+                optional: true
+            }
+        ], callback))
+            return;
+
+        const data = {
+            owner_address: toHex(address),
+            balance: parseInt(amount),
+            resource: resource,
+            lock
+        }
+
+        if (utils.isNotNullOrUndefined(receiverAddress) && toHex(receiverAddress) !== toHex(address)) {
+            data.receiver_address = toHex(receiverAddress)
+        }
+
+        if (options && options.permissionId) {
+            data.Permission_id = options.permissionId;
+        }
+
+        this.tronWeb.fullNode.request('wallet/delegateresource', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
+    }
+
+    undelegateResource(amount = 0, resource = "BANDWIDTH", address = this.tronWeb.defaultAddress.hex, receiverAddress = undefined, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
+        if (utils.isFunction(receiverAddress)) {
+            callback = receiverAddress;
+            receiverAddress = undefined;
+        } else if (utils.isObject(receiverAddress)) {
+            options = receiverAddress;
+            receiverAddress = undefined;
+        }
+
+        if (utils.isFunction(address)) {
+            callback = address;
+            address = this.tronWeb.defaultAddress.hex;
+        } else if (utils.isObject(address)) {
+            options = address;
+            address = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (utils.isFunction(resource)) {
+            callback = resource;
+            resource = "BANDWIDTH";
+        }
+
+        if (!callback)
+            return this.injectPromise(this.undelegateResource, amount, resource, address, receiverAddress, options);
+
+        if (this.validator.notValid([
+            {
+                name: 'origin',
+                type: 'address',
+                value: address
+            },
+            {
+                name: 'receiver',
+                type: 'address',
+                value: receiverAddress,
+                optional: true
+            },
+            {
+                name: 'amount',
+                type: 'integer',
+                gt: 0,
+                value: amount
+            },
+            {
+                name: 'resource',
+                type: 'resource',
+                value: resource,
+                msg: 'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY'
+            }
+        ], callback))
+            return;
+
+        const data = {
+            owner_address: toHex(address),
+            balance: parseInt(amount),
+            resource: resource
+        }
+
+        if (utils.isNotNullOrUndefined(receiverAddress) && toHex(receiverAddress) !== toHex(address)) {
+            data.receiver_address = toHex(receiverAddress)
+        }
+
+        if (options && options.permissionId) {
+            data.Permission_id = options.permissionId;
+        }
+
+        this.tronWeb.fullNode.request('wallet/undelegateresource', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
+    }
+
+    withdrawExpireUnfreeze(address = this.tronWeb.defaultAddress.hex, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
+        if (utils.isFunction(address)) {
+            callback = address;
+            address = this.tronWeb.defaultAddress.hex;
+        } else if (utils.isObject(address)) {
+            options = address;
+            address = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (!callback)
+            return this.injectPromise(this.withdrawExpireUnfreeze, address, options);
+
+        if (this.validator.notValid([
+            {
+                name: 'origin',
+                type: 'address',
+                value: address
+            }
+        ], callback))
+            return;
+
+        const data = {
+            owner_address: toHex(address)
+        }
+
+        if (options && options.permissionId) {
+            data.Permission_id = options.permissionId;
+        }
+
+        this.tronWeb.fullNode.request('wallet/withdrawexpireunfreeze', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
     }
 
     withdrawBlockRewards(address = this.tronWeb.defaultAddress.hex, options, callback = false) {
@@ -771,6 +1083,11 @@ export default class TransactionBuilder {
         return this.triggerSmartContract(...params);
     }
 
+    estimateEnergy(...params) {
+        params[2].estimateEnergy = true;
+        return this.triggerSmartContract(...params);
+    }
+
     _triggerSmartContract(
         contractAddress,
         functionSelector,
@@ -924,7 +1241,7 @@ export default class TransactionBuilder {
         if (utils.isNotNullOrUndefined(tokenId))
             args.token_id = parseInt(tokenId)
 
-        if (!options._isConstant) {
+        if (!(options._isConstant || options.estimateEnergy)) {
             args.fee_limit = parseInt(feeLimit)
         }
 
@@ -932,7 +1249,15 @@ export default class TransactionBuilder {
             args.Permission_id = options.permissionId;
         }
 
-        this.tronWeb[options.confirmed ? 'solidityNode' : 'fullNode'].request(`wallet${options.confirmed ? 'solidity' : ''}/trigger${options._isConstant ? 'constant' : 'smart'}contract`, args, 'post').then(transaction => resultManagerTriggerSmartContract(transaction, args, options, callback)).catch(err => callback(err));
+        let pathInfo = 'triggersmartcontract';
+        if(options._isConstant) {
+            pathInfo = 'triggerconstantcontract';
+        } else if (options.estimateEnergy) {
+            pathInfo = 'estimateenergy';
+        }
+        pathInfo = `wallet${options.confirmed ? 'solidity' : ''}/${pathInfo}`;
+
+        this.tronWeb[options.confirmed ? 'solidityNode' : 'fullNode'].request(pathInfo, args, 'post').then(transaction => resultManagerTriggerSmartContract(transaction, args, options, callback)).catch(err => callback(err));
     }
 
     clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, callback = false) {
@@ -1127,6 +1452,50 @@ export default class TransactionBuilder {
         }
 
         this.tronWeb.fullNode.request('wallet/createassetissue', data, 'post').then(transaction => resultManager(transaction, data, callback)).catch(err => callback(err));
+    }
+
+    createAccount(accountAddress, address = this.tronWeb.defaultAddress.hex, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
+        if (utils.isFunction(address)) {
+            callback = address;
+            address = this.tronWeb.defaultAddress.hex;
+        } else if (utils.isObject(address)) {
+            options = address;
+            address = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (!callback) {
+            return this.injectPromise(this.createAccount, accountAddress, address, options);
+        }
+
+        if (this.validator.notValid([
+            {
+                name: 'account',
+                type: 'address',
+                value: accountAddress
+            },
+            {
+                name: 'origin',
+                type: 'address',
+                value: address
+            }
+        ], callback))
+            return;
+
+        const data = {
+            owner_address: toHex(address),
+            account_address: toHex(accountAddress),
+        };
+
+        if (options && options.permissionId) {
+            data.Permission_id = options.permissionId;
+        }
+
+        this.tronWeb.fullNode.request('wallet/createaccount', data, 'post').then(transaction => resultManager(transaction, data, options, callback)).catch(err => callback(err));
     }
 
     createAccount(accountAddress, address = this.tronWeb.defaultAddress.hex, options, callback = false) {
