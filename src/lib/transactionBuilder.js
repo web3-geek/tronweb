@@ -6,7 +6,7 @@ import {ADDRESS_PREFIX_REGEX} from 'utils/address';
 import injectpromise from 'injectpromise';
 import {encodeParamsV2ByABI} from 'utils/abi';
 import {txCheckWithArgs} from 'utils/transaction';
-const util = require('util');
+
 let self;
 
 //helpers
