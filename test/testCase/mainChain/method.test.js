@@ -4,6 +4,7 @@ const testSetValContract = require('../util/contracts').testSetVal;
 const outputNameTest1 = require('../util/contracts').outputNameTest1;
 const outputNameTest2 = require('../util/contracts').outputNameTest2;
 const testEmptyAbi = require('../util/contracts').testEmptyAbi;
+const TestCustomError = require('../util/contracts').TestCustomError;
 const tronWebBuilder = require('../util/tronWebBuilder');
 const assertThrow = require('../util/assertThrow');
 const broadcaster = require('../util/broadcaster');
@@ -14,6 +15,44 @@ const util = require('util');
 const assert = chai.assert;
 const _ = require('lodash');
 const { equals, getValues } = require('../util/testUtils');
+
+describe('#contract.index', function () {
+
+    let accounts;
+    let tronWeb;
+    let emptyAccount;
+
+    before(async function () {
+        tronWeb = tronWebBuilder.createInstance();
+        // ALERT this works only with Tron Quickstart:
+        accounts = await tronWebBuilder.getTestAccounts(-1);
+        emptyAccount = await TronWeb.createAccount();
+    });
+
+    describe('#customError', function () {
+        let customError;
+
+        before(async function () {
+            const tx = await broadcaster(tronWeb.transactionBuilder.createSmartContract({
+                abi: testCustomError.abi,
+                bytecode: testCustomError.bytecode
+            }, accounts.b58[0]), accounts.pks[0]);
+            customError = await tronWeb.contract(testCustomError.abi, tx.transaction.contract_address);
+        })
+
+        it('should revert with custom error', async () => {
+            const txid = await customError.test(111).send();
+            await wait(10);
+            const data = await tronWeb.trx.getTransactionInfo(txid);
+            const errorData = data.contractResult;
+            const expectedErrorData =
+                TronWeb.sha3('CustomError(uint256,uint256)', false).slice(0, 8) +
+                '000000000000000000000000000000000000000000000000000000000000006f' + // 111
+                '0000000000000000000000000000000000000000000000000000000000000001'; // 1
+            assert.equal(errorData, expectedErrorData);
+        })
+    })
+});
 
 describe('#contract.method', function () {
 

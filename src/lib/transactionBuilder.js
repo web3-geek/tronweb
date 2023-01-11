@@ -6,7 +6,7 @@ import {ADDRESS_PREFIX_REGEX} from 'utils/address';
 import injectpromise from 'injectpromise';
 import {encodeParamsV2ByABI} from 'utils/abi';
 import {txCheckWithArgs} from 'utils/transaction';
-
+const util = require('util');
 let self;
 
 //helpers
@@ -511,7 +511,7 @@ export default class TransactionBuilder {
 
         const data = {
             owner_address: toHex(address),
-            unfreeze_balance: parseInt(amount), 
+            unfreeze_balance: parseInt(amount),
             resource: resource
         }
 

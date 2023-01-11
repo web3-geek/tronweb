@@ -1,4 +1,4 @@
-const {testRevert, testConstant, arrayParam, tronToken, testAddressArray, trcTokenTest070, trcTokenTest059, funcABIV2, funcABIV2_2, funcABIV2_3, funcABIV2_4, abiV2Test1,abiV2Test2} = require('../util/contracts');
+const {testRevert, testConstant, arrayParam, tronToken, testAddressArray, trcTokenTest070, trcTokenTest059, funcABIV2, funcABIV2_2, funcABIV2_3, funcABIV2_4, abiV2Test1,abiV2Test2, testSetVal} = require('../util/contracts');
 const assertThrow = require('../util/assertThrow');
 const broadcaster = require('../util/broadcaster');
 const pollAccountFor = require('../util/pollAccountFor');
@@ -37,8 +37,8 @@ describe('TronWeb.transactionBuilder', function () {
     before(async function () {
         emptyAccount = await TronWeb.createAccount();
         tronWeb = tronWebBuilder.createInstance();
-        await tronWebBuilder.newTestAccountsInMain(29);
-        accounts = await tronWebBuilder.getTestAccountsInMain(29);
+        await tronWebBuilder.newTestAccountsInMain(2);
+        accounts = await tronWebBuilder.getTestAccountsInMain(2);
     });
 
     describe('#constructor()', function () {
@@ -3231,6 +3231,553 @@ describe('TronWeb.transactionBuilder', function () {
                 {},
                 []);
             assert.equal(transaction.constant_result[0],'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6d87');
+        });
+    });
+
+    describe("#freezeBalanceV2", async function () {
+        it('has amount resource[BANDWIDTH] address options', async function () {
+            let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(3e6, 'BANDWIDTH', accounts.b58[0], {permissionId: 2});
+            await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+            let parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, accounts.hex[0]);
+            assert.equal(parameter.value.frozen_balance, 3e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+
+            transaction = await tronWeb.transactionBuilder.freezeBalanceV2(4e6, 'BANDWIDTH', accounts.hex[0]);
+            await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+            parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, accounts.hex[0]);
+            assert.equal(parameter.value.frozen_balance, 4e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+        })
+
+        it('has amount resource[ENERGY] address options', async function () {
+            let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(5e6, 'ENERGY', accounts.b58[1], {permissionId: 2});
+            await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            let parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.frozen_balance, 5e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+
+            transaction = await tronWeb.transactionBuilder.freezeBalanceV2(6e6, 'ENERGY', accounts.hex[1]);
+            await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.frozen_balance, 6e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+        })
+
+        it('no params use default value', async function () {
+            let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(1e6);
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            let parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, ADDRESS_HEX);
+            assert.equal(parameter.value.frozen_balance, 1e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
+                [100e6, 'BANDWIDTH', 'ddssddd']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'BANDWIDTH', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if resource is invalid', async function () {
+            const params = [
+                ['-100', 'aabbccdd', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'aabbccdd', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'ENERGY', 'ddssddd', {permissionId: 2}],
+                [100e6, 'ENERGY', 'ddssddd']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'ENERGY', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
+            }
+        })
+    });
+
+    describe("#unfreezeBalanceV2", async function () {
+        it('should allows accounts[1] to unfreeze its balance', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'BANDWIDTH', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param)
+                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.value.unfreeze_balance, 100e6);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[3] ? param[3]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
+                [100e6, 'BANDWIDTH', 'ddssddd']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'BANDWIDTH', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if resource is invalid', async function () {
+            const params = [
+                [100e6, 'aabbccdd', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'aabbccdd', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+            }
+        })
+
+        it('should allows accounts[1] to unfreeze its balance', async function () {
+            const params = [
+                [100e6, 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'ENERGY', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param)
+                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.value.unfreeze_balance, 100e6);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[3] ? param[3]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'ENERGY', 'ddssddd', {permissionId: 2}],
+                [100e6, 'ENERGY', 'ddssddd']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'ENERGY', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+            }
+        })
+    });
+
+    describe("#delegateResource", async function () {
+        it('should allows accounts[1] to delegate its resource', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.delegateResource(...param)
+                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+                assert.equal(parameter.value.balance, 100e6);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7], {permissionId: 2}],
+                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+
+        it('should throw if resource is invalid', async function () {
+            const params = [
+                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+
+        it('should throw if receiver address is invalid', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
+                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+
+        it('should allows accounts[1] to delegate its resource', async function () {
+            const params = [
+                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.delegateResource(...param)
+                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+                assert.equal(parameter.value.balance, 100e6);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7], {permissionId: 2}],
+                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+
+        it('should throw if receiver address is invalid', async function () {
+            const params = [
+                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
+                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+            }
+        })
+    });
+
+    describe("#undelegateResource", async function () {
+        it('should allows accounts[1] to undelegate its resource', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.undelegateResource(...param)
+                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+                assert.equal(parameter.value.balance, 100e6);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7], {permissionId: 2}],
+                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+
+        it('should throw if resource is invalid', async function () {
+            const params = [
+                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+
+        it('should throw if receiver address is invalid', async function () {
+            const params = [
+                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
+                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+
+        it('should allows accounts[1] to undelegate its resource', async function () {
+            const params = [
+                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.undelegateResource(...param)
+                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+                assert.equal(parameter.value.balance, 100e6);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7], {permissionId: 2}],
+                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+
+        it('should throw if frozen balance is invalid', async function () {
+            const params = [
+                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
+                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+
+        it('should throw if receiver address is invalid', async function () {
+            const params = [
+                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
+                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+            }
+        })
+    });
+
+    describe("#withdrawExpireUnfreeze", async function () {
+        const idx = 1;
+
+        before(async () => {
+            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction2);
+            await waitChainData('tx', transaction2.txID);
+            const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
+            await waitChainData('tx', transaction.txID);
+
+            const transaction3 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction3);
+            await waitChainData('tx', transaction3.txID);
+            const transaction4 = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction4);
+            await waitChainData('tx', transaction4.txID);
+            await wait(65);
+        })
+        it('should allows accounts[1] to withdraw its undelegated resource', async function () {
+            const params = [
+                [accounts.b58[1], {permissionId: 2}],
+                [accounts.b58[1]]
+            ];
+            for (let param of params) {
+                const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param)
+
+                const parameter = txPars(transaction);
+                // jlog(parameter)
+                assert.equal(parameter.value.owner_address, accounts.hex[1]);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[1] ? param[1]['permissionId'] : 0);
+            }
+        })
+
+        it('should throw if owner address is invalid', async function () {
+            const params = [
+                ['ddssddd', {permissionId: 2}],
+                ['ddssddd']
+            ];
+
+            for (let param of params) {
+                await assertThrow(tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param))
+            }
+        })
+    });
+
+    describe("#estimateEnergy", async function () {
+
+        let transaction;
+        before(async function () {
+            this.timeout(20000);
+            transaction = await tronWeb.transactionBuilder.createSmartContract({
+                abi: testSetVal.abi,
+                bytecode: testSetVal.bytecode
+            }, accounts.hex[5]);
+            await broadcaster.broadcaster(null, accounts.pks[5], transaction);
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        })
+
+        it('should estimate energy successfully', async function () {
+            this.timeout(20000);
+            const contractAddress = transaction.contract_address;
+            const issuerAddress = accounts.hex[5];
+            const functionSelector = 'set(uint256)';
+            const parameter = [
+                {type: 'uint256', value: 1}
+            ]
+            const options = {estimateEnery: true};
+
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddress, functionSelector, options,
+                    parameter, issuerAddress);
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+            }
+        });
+
+        it('should estimate confirmed energy successfully', async function () {
+            this.timeout(20000);
+            const contractAddress = transaction.contract_address;
+            const issuerAddress = accounts.hex[5];
+            const functionSelector = 'set(uint256)';
+            const parameter = [
+                {type: 'uint256', value: 2}
+            ]
+            const options = {estimateEnery: true, confirmed: true};
+
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddress, functionSelector, options,
+                    parameter, issuerAddress);
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+            }
         });
     });
 });
