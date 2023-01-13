@@ -20,6 +20,8 @@ const {
     FULL_NODE_API,
     WITNESS_ACCOUNT,
     WITNESS_KEY,
+    WITNESS_ACCOUNT2,
+    WITNESS_KEY2
 } = require('../util/config');
 const testRevertContract = require('../util/contracts').testRevert;
 const messageCases = require('../../testcases/src/sign-message');
@@ -1871,19 +1873,19 @@ describe('TronWeb.trx', function () {
         });
 
 
-        describe("#getProposal", async function () {
+        describe.only("#getProposal", async function () {
 
             let proposals;
 
             before(async function(){
                 // create proposal
-                let parameters = [{"key": 0, "value": 100000}, {"key": 1, "value": 2}]
+                let parameters = [{"key": 72, "value": 1},{"key": 73, "value": 100000000000},{"key": 74, "value": 1000},{"key": 75, "value": 10000}]
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
                     await tronWeb.transactionBuilder.createProposal(parameters[0], WITNESS_ACCOUNT)
                 );
-
+                await wait(30);
                 proposals = await tronWeb.trx.listProposals();
             });
 
@@ -1893,6 +1895,19 @@ describe('TronWeb.trx', function () {
                     assert.equal(ps.proposal_id, proposal.proposal_id);
                 }
             });
+
+            it('should allow vote proposal', async function () {
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY,
+                    await tronWeb.transactionBuilder.voteProposal(1, true, WITNESS_ACCOUNT)
+                );
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY2,
+                    await tronWeb.transactionBuilder.voteProposal(1, true, WITNESS_ACCOUNT2)
+                );
+            })
 
             it('should throw invalid proposalID provided error', async function () {
                 await assertThrow(
@@ -2085,7 +2100,7 @@ describe('TronWeb.trx', function () {
         before(async function(){
             const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.hex[idx]);
             await broadcaster(null, accounts.pks[idx], transaction2);
-            const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, 'BANDWIDTH', accounts.hex[idx], accounts.hex[idx + 1]);
+            const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx + 1], 'BANDWIDTH', accounts.hex[idx]);
             await broadcaster(null, accounts.pks[idx], transaction);
         });
 
@@ -2139,7 +2154,7 @@ describe('TronWeb.trx', function () {
         before(async function(){
             const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH');
             await broadcaster(null, PRIVATE_KEY, transaction2);
-            const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, 'BANDWIDTH', tronWeb.defaultAddress.hex, accounts.hex[idx]);
+            const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx], 'BANDWIDTH', tronWeb.defaultAddress.hex);
             await broadcaster(null, PRIVATE_KEY, transaction);
         });
 

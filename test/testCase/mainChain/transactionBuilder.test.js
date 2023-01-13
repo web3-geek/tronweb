@@ -1,4 +1,6 @@
-const {testRevert, testConstant, arrayParam, tronToken, testAddressArray, trcTokenTest070, trcTokenTest059, funcABIV2, funcABIV2_2, funcABIV2_3, funcABIV2_4, abiV2Test1,abiV2Test2, testSetVal} = require('../util/contracts');
+const {testRevert, testConstant, arrayParam, tronToken, testAddressArray, trcTokenTest070, trcTokenTest059, funcABIV2, funcABIV2_2, funcABIV2_3, funcABIV2_4, abiV2Test1,abiV2Test2, testSetVal,
+    testEmptyAbi
+} = require('../util/contracts');
 const assertThrow = require('../util/assertThrow');
 const broadcaster = require('../util/broadcaster');
 const pollAccountFor = require('../util/pollAccountFor');
@@ -37,8 +39,8 @@ describe('TronWeb.transactionBuilder', function () {
     before(async function () {
         emptyAccount = await TronWeb.createAccount();
         tronWeb = tronWebBuilder.createInstance();
-        await tronWebBuilder.newTestAccountsInMain(2);
-        accounts = await tronWebBuilder.getTestAccountsInMain(2);
+        await tronWebBuilder.newTestAccountsInMain(20);
+        accounts = await tronWebBuilder.getTestAccountsInMain(20);
     });
 
     describe('#constructor()', function () {
@@ -3235,149 +3237,140 @@ describe('TronWeb.transactionBuilder', function () {
     });
 
     describe("#freezeBalanceV2", async function () {
-        it('has amount resource[BANDWIDTH] address options', async function () {
-            let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(3e6, 'BANDWIDTH', accounts.b58[0], {permissionId: 2});
-            await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+        it('has amount resource address[account0] options', async function () {
+            let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(4e6, 'BANDWIDTH', accounts.b58[0], {permissionId: 2});
+            let tx = await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
             let parameter = txPars(transaction);
-            console.log("parameter: "+util.inspect(parameter,true,null,true))
-            assert.equal(parameter.value.owner_address, accounts.hex[0]);
-            assert.equal(parameter.value.frozen_balance, 3e6);
-            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
-            assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
-
-            transaction = await tronWeb.transactionBuilder.freezeBalanceV2(4e6, 'BANDWIDTH', accounts.hex[0]);
-            await broadcaster.broadcaster(null, accounts.pks[0], transaction);
-            parameter = txPars(transaction);
             console.log("parameter: "+util.inspect(parameter,true,null,true))
             assert.equal(parameter.value.owner_address, accounts.hex[0]);
             assert.equal(parameter.value.frozen_balance, 4e6);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+            let accountInfo = await tronWeb.trx.getAccount(accounts.b58[0]);
+            let accountResource = await tronWeb.trx.getAccountResources(accounts.b58[0])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[0].amount, 4e6);
+            assert.equal(accountResource.tronPowerLimit, 4);
+
+            transaction = await tronWeb.transactionBuilder.freezeBalanceV2(3e6, 'ENERGY', accounts.hex[0]);
+            tx = await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, accounts.hex[0]);
+            assert.equal(parameter.value.frozen_balance, 3e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            accountInfo = await tronWeb.trx.getAccount(accounts.hex[0]);
+            accountResource = await tronWeb.trx.getAccountResources(accounts.b58[0])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[1].type, 'ENERGY');
+            assert.equal(accountInfo.frozenV2[1].amount, 3e6);
+            assert.equal(accountResource.tronPowerLimit, 7);
         })
 
-        it('has amount resource[ENERGY] address options', async function () {
+        it('has amount resource address[account1] options', async function () {
             let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(5e6, 'ENERGY', accounts.b58[1], {permissionId: 2});
-            await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
             let parameter = txPars(transaction);
             console.log("parameter: "+util.inspect(parameter,true,null,true))
             assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.resource, 'ENERGY');
             assert.equal(parameter.value.frozen_balance, 5e6);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
             assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+            let accountInfo = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResource = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[1].type, 'ENERGY');
+            assert.equal(accountInfo.frozenV2[1].amount, 5e6);
+            assert.equal(accountResource.tronPowerLimit, 5);
 
-            transaction = await tronWeb.transactionBuilder.freezeBalanceV2(6e6, 'ENERGY', accounts.hex[1]);
-            await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            transaction = await tronWeb.transactionBuilder.freezeBalanceV2(6e6, 'BANDWIDTH', accounts.hex[1]);
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
             parameter = txPars(transaction);
             console.log("parameter: "+util.inspect(parameter,true,null,true))
             assert.equal(parameter.value.owner_address, accounts.hex[1]);
             assert.equal(parameter.value.frozen_balance, 6e6);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            accountInfo = await tronWeb.trx.getAccount(accounts.hex[1]);
+            accountResource = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[0].amount, 6e6);
+            assert.equal(accountResource.tronPowerLimit, 11);
         })
 
         it('no params use default value', async function () {
+            let accountResourceBeofre = await tronWeb.trx.getAccountResources()
+            let accountBefore = await tronWeb.trx.getAccount();
             let transaction = await tronWeb.transactionBuilder.freezeBalanceV2(1e6);
-            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            let tx = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
             let parameter = txPars(transaction);
             console.log("parameter: "+util.inspect(parameter,true,null,true))
             assert.equal(parameter.value.owner_address, ADDRESS_HEX);
             assert.equal(parameter.value.frozen_balance, 1e6);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.FreezeBalanceV2Contract');
+            let accountResourceAfter = await tronWeb.trx.getAccountResources()
+            let accountAfter = await tronWeb.trx.getAccount();
+            console.log("accountResourceAfter: "+util.inspect(accountResourceAfter,true,null,true))
+            console.log("accountAfter: "+util.inspect(accountAfter,true,null,true))
+            assert.equal(accountAfter.frozenV2[0].amount, accountBefore.frozenV2[0].amount+1e6);
+            assert.equal(accountResourceAfter.tronPowerLimit, accountResourceBeofre.tronPowerLimit+1);
         })
 
         it('should throw if owner address is invalid', async function () {
             const params = [
                 [100e6, 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
-                [100e6, 'BANDWIDTH', 'ddssddd']
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
-            }
-        })
-
-        it('should throw if frozen balance is invalid', async function () {
-            const params = [
-                ['-100', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
-                ['-100', 'BANDWIDTH', accounts.b58[1]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
-            }
-        })
-
-        it('should throw if resource is invalid', async function () {
-            const params = [
-                ['-100', 'aabbccdd', accounts.b58[1], {permissionId: 2}],
-                ['-100', 'aabbccdd', accounts.b58[1]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
-            }
-        })
-
-        it('should throw if owner address is invalid', async function () {
-            const params = [
+                [100e6, 'BANDWIDTH', 'ddssddd'],
                 [100e6, 'ENERGY', 'ddssddd', {permissionId: 2}],
                 [100e6, 'ENERGY', 'ddssddd']
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
-            }
-        })
-
-        it('should throw if frozen balance is invalid', async function () {
-            const params = [
-                ['-100', 'ENERGY', accounts.b58[1], {permissionId: 2}],
-                ['-100', 'ENERGY', accounts.b58[1]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.freezeBalanceV2(...param))
-            }
-        })
-    });
-
-    describe("#unfreezeBalanceV2", async function () {
-        it('should allows accounts[1] to unfreeze its balance', async function () {
-            const params = [
-                [100e6, 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
-                [100e6, 'BANDWIDTH', accounts.b58[1]]
-            ];
-
-            for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param)
-                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
-
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.value.unfreeze_balance, 100e6);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[3] ? param[3]['permissionId'] : 0);
-            }
-        })
-
-        it('should throw if owner address is invalid', async function () {
-            const params = [
-                [100e6, 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
-                [100e6, 'BANDWIDTH', 'ddssddd']
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.freezeBalanceV2(...param),
+                    'Invalid origin address provided'
+                )
             }
         })
 
         it('should throw if frozen balance is invalid', async function () {
             const params = [
                 ['-100', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
-                ['-100', 'BANDWIDTH', accounts.b58[1]]
+                ['-100', 'BANDWIDTH', accounts.b58[1]],
+                ['-100', 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.freezeBalanceV2(...param),
+                    'Invalid amount provided'
+                )
             }
         })
 
@@ -3388,323 +3381,824 @@ describe('TronWeb.transactionBuilder', function () {
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.freezeBalanceV2(...param),
+                    'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY"'
+                )
             }
         })
+    });
 
-        it('should allows accounts[1] to unfreeze its balance', async function () {
-            const params = [
-                [100e6, 'ENERGY', accounts.b58[1], {permissionId: 2}],
-                [100e6, 'ENERGY', accounts.b58[1]]
-            ];
+    // need excute #freezeBalanceV2 before
+    describe("#unfreezeBalanceV2", async function () {
+        it('has amount resource address[account0] options', async function () {
+            let transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(3e6, 'BANDWIDTH', accounts.b58[0], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[0]);
+            assert.equal(parameter.value.unfreeze_balance, 3e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+            let accountInfo = await tronWeb.trx.getAccount(accounts.b58[0]);
+            let accountResource = await tronWeb.trx.getAccountResources(accounts.b58[0])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[0].amount, 1e6);
+            assert.equal(accountInfo.unfrozenV2[0].unfreeze_amount, 1e6);
+            assert.equal(accountResource.tronPowerLimit, 4);
 
-            for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param)
-                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(2e6, 'ENERGY', accounts.b58[0])
+            tx = await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[0]);
+            assert.equal(parameter.value.unfreeze_balance, 2e6);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            accountInfo = await tronWeb.trx.getAccount(accounts.hex[0]);
+            accountResource = await tronWeb.trx.getAccountResources(accounts.b58[0])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[1].type, 'ENERGY');
+            assert.equal(accountInfo.frozenV2[1].amount, 1e6);
+            assert.equal(accountResource.tronPowerLimit, 2);
+        })
 
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.value.unfreeze_balance, 100e6);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[3] ? param[3]['permissionId'] : 0);
-            }
+        it('has amount resource address[account1] options', async function () {
+            let transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(5e6, 'ENERGY', accounts.b58[1], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.unfreeze_balance, 5e6);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+            let accountInfo = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResource = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.equal(accountInfo.frozenV2[1].type, 'ENERGY');
+            assert.isUndefined(accountInfo.frozenV2[1].amount);
+            assert.equal(accountResource.tronPowerLimit, 6);
+
+            transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(6e6, 'BANDWIDTH', accounts.b58[1])
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.unfreeze_balance, 6e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            accountInfo = await tronWeb.trx.getAccount(accounts.hex[1]);
+            accountResource = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
+            console.log("accountResource: "+util.inspect(accountResource,true,null,true))
+            assert.isUndefined(accountInfo.frozenV2[0].amount);
+            assert.isUndefined(accountResource.tronPowerLimit);
+        })
+
+        it('no params use default value', async function () {
+            let accountResourceBeofre = await tronWeb.trx.getAccountResources()
+            let accountBefore = await tronWeb.trx.getAccount();
+            let transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(1e6);
+            let tx = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            console.log("tx:"+util.inspect(tx))
+            console.log("tx.txID:"+tx.transaction.txID)
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            console.log("parameter: "+util.inspect(parameter,true,null,true))
+            assert.equal(parameter.value.owner_address, ADDRESS_HEX);
+            assert.equal(parameter.value.unfreeze_balance, 1e6);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnfreezeBalanceV2Contract');
+            let accountResourceAfter = await tronWeb.trx.getAccountResources()
+            let accountAfter = await tronWeb.trx.getAccount();
+            console.log("accountResourceAfter: "+util.inspect(accountResourceAfter,true,null,true))
+            console.log("accountAfter: "+util.inspect(accountAfter,true,null,true))
+            assert.equal(accountAfter.frozenV2[0].amount, accountBefore.frozenV2[0].amount-1e6);
+            assert.equal(accountResourceAfter.tronPowerLimit, accountResourceBeofre.tronPowerLimit-1);
         })
 
         it('should throw if owner address is invalid', async function () {
             const params = [
+                [100e6, 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
+                [100e6, 'BANDWIDTH', 'ddssddd'],
                 [100e6, 'ENERGY', 'ddssddd', {permissionId: 2}],
                 [100e6, 'ENERGY', 'ddssddd']
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.unfreezeBalanceV2(...param),
+                    'Invalid origin address provided'
+                )
             }
         })
 
         it('should throw if frozen balance is invalid', async function () {
             const params = [
+                ['-100', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                ['-100', 'BANDWIDTH', accounts.b58[1]],
                 ['-100', 'ENERGY', accounts.b58[1], {permissionId: 2}],
                 ['-100', 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.unfreezeBalanceV2(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.unfreezeBalanceV2(...param),
+                    'Invalid amount provided'
+                )
+            }
+        })
+
+        it('should throw if resource is invalid', async function () {
+            const params = [
+                [100e6, 'aabbccdd', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'aabbccdd', accounts.b58[1]]
+            ];
+
+            for (let param of params) {
+                await assertThrow(
+                    tronWeb.transactionBuilder.unfreezeBalanceV2(...param),
+                    'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY"'
+                )
             }
         })
     });
 
     describe("#delegateResource", async function () {
-        it('should allows accounts[1] to delegate its resource', async function () {
-            const params = [
-                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
-            ];
+        before(async () => {
+            const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.b58[1]);
+            await broadcaster.broadcaster(null, accounts.pks[1], transaction);
 
-            for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.delegateResource(...param)
-                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY', accounts.hex[1]);
+            await broadcaster.broadcaster(null, accounts.pks[1], transaction2);
 
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
-                assert.equal(parameter.value.balance, 100e6);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
-            }
+            const transaction3 = await tronWeb.transactionBuilder.freezeBalanceV2(50e6);
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction3);
+            await wait(30);
+        });
+
+        it('resource is BANDWIDTH and multisign、normal and lock is default false', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'BANDWIDTH', accounts.b58[1], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, 10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'BANDWIDTH', accounts.b58[1])
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[0].amount, accountAfter1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter2.delegated_frozenV2_balance_for_bandwidth, accountAfter1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+        })
+
+        it('resource is ENERGY and multisign、normal and lock is default false', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY', accounts.b58[1], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[1].amount, accountBefore1.frozenV2[1].amount-10e6);
+            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy, accountBefore1.account_resource.delegated_frozenV2_balance_for_energy+10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY', accounts.b58[1])
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[1].amount, accountAfter1.frozenV2[1].amount-10e6);
+            assert.equal(accountAfter2.account_resource.delegated_frozenV2_balance_for_energy, accountAfter1.account_resource.delegated_frozenV2_balance_for_energy+10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+        })
+
+        it('resource is BANDWIDTH and multisign、normal and lock is true', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'BANDWIDTH', accounts.b58[1], true, {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.lock, true);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'BANDWIDTH',accounts.b58[1], true)
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.lock, true);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[0].amount, accountAfter1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter2.delegated_frozenV2_balance_for_bandwidth, accountAfter1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+        })
+
+        it('resource is BANDWIDTH and multisign、normal and lock is false', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'BANDWIDTH', accounts.b58[1], false, {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'BANDWIDTH',  accounts.b58[1], false)
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[0].amount, accountAfter1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter2.delegated_frozenV2_balance_for_bandwidth, accountAfter1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+        })
+
+        it('resource is ENERGY and multisign、normal and lock is true', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY', accounts.b58[1], true, {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.lock, true);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[1].amount, accountBefore1.frozenV2[1].amount-10e6);
+            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy,  10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY',accounts.b58[1], true)
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.lock, true);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[1].amount, accountAfter1.frozenV2[1].amount-10e6);
+            assert.equal(accountAfter2.account_resource.delegated_frozenV2_balance_for_energy, accountAfter1.account_resource.delegated_frozenV2_balance_for_energy+10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+        })
+
+        it('resource is ENERGY and multisign、normal and lock is false', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            console.log("accountBefore1: "+util.inspect(accountBefore1,true,null,true))
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY', accounts.b58[1], false, {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[1].amount, accountBefore1.frozenV2[1].amount-10e6);
+            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy, accountBefore1.account_resource.delegated_frozenV2_balance_for_energy + 10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY',  accounts.b58[1], false)
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[1].amount, accountAfter1.frozenV2[1].amount-10e6);
+            assert.equal(accountAfter2.account_resource.delegated_frozenV2_balance_for_energy, accountAfter1.account_resource.delegated_frozenV2_balance_for_energy+10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+        })
+
+        it('resource、ownerAddress、lock is default', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(ADDRESS_BASE58);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(ADDRESS_BASE58)
+            let transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7])
+            let tx = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, ADDRESS_HEX);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.resource);
+            assert.isUndefined(parameter.value.lock);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter1 = await tronWeb.trx.getAccount(ADDRESS_HEX);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(ADDRESS_HEX)
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount-10e6);
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
         })
 
         it('should throw if owner address is invalid', async function () {
             const params = [
-                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7], {permissionId: 2}],
-                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7]]
+                [100e6, accounts.b58[7], 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
+                [100e6, accounts.b58[7], 'BANDWIDTH',  'ddssddd'],
+                [100e6, accounts.b58[7], 'ENERGY', 'ddssddd', {permissionId: 2}],
+                [100e6, accounts.b58[7], 'ENERGY', 'ddssddd']
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.delegateResource(...param),
+                    'Invalid origin address provided'
+                )
             }
         })
 
         it('should throw if frozen balance is invalid', async function () {
             const params = [
-                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
+                ['-100', accounts.b58[7], 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                ['-100', accounts.b58[7], 'BANDWIDTH', accounts.b58[1]],
+                ['-100', accounts.b58[7], 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                ['-100', accounts.b58[7], 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.delegateResource(...param),
+                    'Invalid amount provided'
+                )
             }
         })
 
         it('should throw if resource is invalid', async function () {
             const params = [
-                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7]]
+                [100e6, accounts.b58[7], 'aabbccdd', accounts.b58[1], {permissionId: 2}],
+                [100e6, accounts.b58[7], 'aabbccdd', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.delegateResource(...param),
+                    'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY"'
+                )
             }
         })
 
         it('should throw if receiver address is invalid', async function () {
             const params = [
-                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
-                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk']
+                [100e6, 'adskjkkk', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'adskjkkk', 'BANDWIDTH', accounts.b58[1]],
+                [100e6, 'adskjkkk', 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'adskjkkk', 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.delegateResource(...param),
+                    'Invalid receiver address provided'
+                )
             }
         })
 
-        it('should allows accounts[1] to delegate its resource', async function () {
+        it('should throw if receiver address is the same as from address', async function () {
             const params = [
-                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7]]
+                [100e6, accounts.b58[1], 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                [100e6, accounts.b58[1], 'BANDWIDTH', accounts.b58[1]],
+                [100e6, accounts.b58[1], 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                [100e6, accounts.b58[1], 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.delegateResource(...param)
-                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
-
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
-                assert.equal(parameter.value.balance, 100e6);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.DelegateResourceContract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
-            }
-        })
-
-        it('should throw if owner address is invalid', async function () {
-            const params = [
-                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7], {permissionId: 2}],
-                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
-            }
-        })
-
-        it('should throw if frozen balance is invalid', async function () {
-            const params = [
-                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
-            }
-        })
-
-        it('should throw if receiver address is invalid', async function () {
-            const params = [
-                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
-                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk']
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.delegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.delegateResource(...param),
+                    'Receiver address must not be the same as owner address'
+                )
             }
         })
     });
 
     describe("#undelegateResource", async function () {
-        it('should allows accounts[1] to undelegate its resource', async function () {
-            const params = [
-                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                [100e6, 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
-            ];
+        before(async () => {
+            await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(60e6, 'BANDWIDTH', accounts.b58[1]));
+            await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(60e6, 'ENERGY', accounts.b58[1]));
+            await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.freezeBalanceV2(60e6));
+            await wait(40);
+            const transaction = await tronWeb.transactionBuilder.delegateResource(50e6, accounts.b58[7], 'BANDWIDTH', accounts.b58[1]);
+            await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            const transaction2 = await tronWeb.transactionBuilder.delegateResource(50e6, accounts.b58[7], 'ENERGY', accounts.b58[1]);
+            await broadcaster.broadcaster(null, accounts.pks[1], transaction2);
+            const transaction3 = await tronWeb.transactionBuilder.delegateResource(50e6, accounts.b58[7]);
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction3);
+            await wait(30);
+        });
 
-            for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.undelegateResource(...param)
-                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+        it('resource is BANDWIDTH and multisign、normal address', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.undelegateResource(10e6, accounts.hex[7], 'BANDWIDTH', accounts.hex[1], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.resource);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount+10e6);
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore1.delegated_frozenV2_balance_for_bandwidth-10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
 
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
-                assert.equal(parameter.value.balance, 100e6);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
-            }
+            transaction = await tronWeb.transactionBuilder.undelegateResource(10e6, accounts.b58[7], 'BANDWIDTH', accounts.b58[1])
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.resource);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[0].amount, accountAfter1.frozenV2[0].amount+10e6);
+            assert.equal(accountAfter2.delegated_frozenV2_balance_for_bandwidth, accountAfter1.delegated_frozenV2_balance_for_bandwidth-10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceAfter1.tronPowerLimit);
+        })
+
+        it('resource is ENERGY and multisign、normal address', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            let transaction = await tronWeb.transactionBuilder.undelegateResource(10e6, accounts.hex[7], 'ENERGY', accounts.hex[1], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[1].amount, accountBefore1.frozenV2[1].amount+10e6);
+            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy, accountBefore1.account_resource.delegated_frozenV2_balance_for_energy-10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
+            transaction = await tronWeb.transactionBuilder.undelegateResource(10e6, accounts.b58[7], 'ENERGY', accounts.b58[1])
+            tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.equal(parameter.value.resource, 'ENERGY');
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.b58[1]);
+            let accountResourceAfter2 = await tronWeb.trx.getAccountResources(accounts.b58[1])
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            console.log("accountResourceAfter2: "+util.inspect(accountResourceAfter2,true,null,true))
+            assert.equal(accountAfter2.frozenV2[1].amount, accountAfter1.frozenV2[1].amount+10e6);
+            assert.equal(accountAfter2.account_resource.delegated_frozenV2_balance_for_energy, accountAfter1.account_resource.delegated_frozenV2_balance_for_energy-10e6);
+            assert.equal(accountResourceAfter2.tronPowerLimit, accountResourceAfter1.tronPowerLimit);
+        })
+
+        it('resource、ownerAddress is default', async function () {
+            let accountBefore1 = await tronWeb.trx.getAccount();
+            let accountResourceBefore1 = await tronWeb.trx.getAccountResources()
+            let transaction = await tronWeb.transactionBuilder.undelegateResource(10e6, accounts.hex[7])
+            let tx = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, ADDRESS_HEX);
+            assert.equal(parameter.value.receiver_address, accounts.hex[7]);
+            assert.equal(parameter.value.balance, 10e6);
+            assert.isUndefined(parameter.value.resource);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter1 = await tronWeb.trx.getAccount();
+            let accountResourceAfter1 = await tronWeb.trx.getAccountResources()
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
+            assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount+10e6);
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore1.delegated_frozenV2_balance_for_bandwidth-10e6);
+            assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
+
         })
 
         it('should throw if owner address is invalid', async function () {
             const params = [
-                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7], {permissionId: 2}],
-                [100e6, 'BANDWIDTH', 'ddssddd', accounts.b58[7]]
+                [100e6, accounts.b58[7], 'BANDWIDTH', 'ddssddd', {permissionId: 2}],
+                [100e6, accounts.b58[7], 'BANDWIDTH', 'ddssddd'],
+                [100e6, accounts.b58[7], 'ENERGY', 'ddssddd', {permissionId: 2}],
+                [100e6, accounts.b58[7], 'ENERGY', 'ddssddd']
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.undelegateResource(...param),
+                    'Invalid origin address provided'
+                )
             }
         })
 
         it('should throw if frozen balance is invalid', async function () {
             const params = [
-                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                ['-100', 'BANDWIDTH', accounts.b58[1], accounts.b58[7]]
+                ['-100', accounts.b58[7], 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                ['-100', accounts.b58[7], 'BANDWIDTH', accounts.b58[1]],
+                ['-100', accounts.b58[7], 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                ['-100', accounts.b58[7], 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.undelegateResource(...param),
+                    'Invalid amount provided'
+                )
             }
         })
 
         it('should throw if resource is invalid', async function () {
             const params = [
-                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                [100e6, 'aabbccdd', accounts.b58[1], accounts.b58[7]]
+                [100e6, accounts.b58[7], 'aabbccdd', accounts.b58[1], {permissionId: 2}],
+                [100e6, accounts.b58[7], 'aabbccdd', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.undelegateResource(...param),
+                    'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY"'
+                )
             }
         })
 
         it('should throw if receiver address is invalid', async function () {
             const params = [
-                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
-                [100e6, 'BANDWIDTH', accounts.b58[1], 'adskjkkk']
+                [100e6, 'adskjkkk', 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'adskjkkk', 'BANDWIDTH', accounts.b58[1]],
+                [100e6, 'adskjkkk', 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                [100e6, 'adskjkkk', 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.undelegateResource(...param),
+                    'Invalid receiver address provided'
+                )
             }
         })
 
-        it('should allows accounts[1] to undelegate its resource', async function () {
+        it('should throw if receiver address is the same as from address', async function () {
             const params = [
-                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                [100e6, 'ENERGY', accounts.b58[1], accounts.b58[7]]
+                [100e6, accounts.b58[1], 'BANDWIDTH', accounts.b58[1], {permissionId: 2}],
+                [100e6, accounts.b58[1], 'BANDWIDTH', accounts.b58[1]],
+                [100e6, accounts.b58[1], 'ENERGY', accounts.b58[1], {permissionId: 2}],
+                [100e6, accounts.b58[1], 'ENERGY', accounts.b58[1]]
             ];
 
             for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.undelegateResource(...param)
-                await broadcaster.broadcaster(null, accounts.pks[1], transaction);
-
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.value.receiver_address, accounts.hex[7]);
-                assert.equal(parameter.value.balance, 100e6);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UnDelegateResourceContract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[4] ? param[4]['permissionId'] : 0);
-            }
-        })
-
-        it('should throw if owner address is invalid', async function () {
-            const params = [
-                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7], {permissionId: 2}],
-                [100e6, 'ENERGY', 'ddssddd', accounts.b58[7]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
-            }
-        })
-
-        it('should throw if frozen balance is invalid', async function () {
-            const params = [
-                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7], {permissionId: 2}],
-                ['-100', 'ENERGY', accounts.b58[1], accounts.b58[7]]
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
-            }
-        })
-
-        it('should throw if receiver address is invalid', async function () {
-            const params = [
-                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk', {permissionId: 2}],
-                [100e6, 'ENERGY', accounts.b58[1], 'adskjkkk']
-            ];
-
-            for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.undelegateResource(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.undelegateResource(...param),
+                    'Receiver address must not be the same as owner address'
+                )
             }
         })
     });
 
     describe("#withdrawExpireUnfreeze", async function () {
-        const idx = 1;
-
         before(async () => {
-            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.hex[idx]);
-            await broadcaster.broadcaster(null, accounts.pks[idx], transaction2);
-            await waitChainData('tx', transaction2.txID);
-            const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[idx]);
-            await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
-            await waitChainData('tx', transaction.txID);
-
-            const transaction3 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY', accounts.hex[idx]);
-            await broadcaster.broadcaster(null, accounts.pks[idx], transaction3);
-            await waitChainData('tx', transaction3.txID);
-            const transaction4 = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.hex[idx]);
-            await broadcaster.broadcaster(null, accounts.pks[idx], transaction4);
-            await waitChainData('tx', transaction4.txID);
-            await wait(65);
+            await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.hex[3]));
+            await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.freezeBalanceV2(500e6, 'ENERGY', accounts.hex[3]));
+            await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY'));
+            await wait(40);
         })
-        it('should allows accounts[1] to withdraw its undelegated resource', async function () {
-            const params = [
-                [accounts.b58[1], {permissionId: 2}],
-                [accounts.b58[1]]
-            ];
-            for (let param of params) {
-                const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param)
 
-                const parameter = txPars(transaction);
-                // jlog(parameter)
-                assert.equal(parameter.value.owner_address, accounts.hex[1]);
-                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
-                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, param[1] ? param[1]['permissionId'] : 0);
-            }
+        it('multisign、normal address', async function () {
+            await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[3]));
+            await wait(35);
+            let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[3]);
+            assert.isTrue(accountBefore1.unfrozenV2[0].unfreeze_amount > 0);
+            let transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(accounts.b58[3], {permissionId: 2})
+            let tx = await broadcaster.broadcaster(null, accounts.pks[3], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[3]);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+            let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[3]);
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            assert.isUndefined(accountAfter1.unfrozenV2);
+
+            await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.hex[3]));
+            await wait(35);
+            let accountBefore2 = await tronWeb.trx.getAccount(accounts.b58[3]);
+            console.log("accountBefore2: "+util.inspect(accountBefore2,true,null,true))
+            assert.isTrue(accountBefore2.unfrozenV2[0].unfreeze_amount > 0);
+            transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(accounts.hex[3])
+            tx = await broadcaster.broadcaster(null, accounts.pks[3], transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, accounts.hex[3]);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter2 = await tronWeb.trx.getAccount(accounts.hex[3]);
+            console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+            assert.isUndefined(accountAfter2.unfrozenV2);
+        })
+
+        it('use default address', async function () {
+            await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY'));
+            await wait(35);
+            let accountBefore1 = await tronWeb.trx.getAccount();
+            console.log("accountBefore1: "+util.inspect(accountBefore1,true,null,true))
+            assert.isTrue(accountBefore1.unfrozenV2[0].unfreeze_amount > 0);
+            let transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze()
+            let tx = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            console.log("tx:"+util.inspect(tx))
+            assert.equal(tx.transaction.txID.length, 64);
+            await wait(30);
+            let parameter = txPars(transaction);
+            assert.equal(parameter.value.owner_address, ADDRESS_HEX);
+            assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+            assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+            let accountAfter1 = await tronWeb.trx.getAccount();
+            console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+            assert.isUndefined(accountAfter1.unfrozenV2);
         })
 
         it('should throw if owner address is invalid', async function () {
@@ -3714,7 +4208,10 @@ describe('TronWeb.transactionBuilder', function () {
             ];
 
             for (let param of params) {
-                await assertThrow(tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param))
+                await assertThrow(
+                    tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param),
+                    'Invalid origin address provided'
+                )
             }
         })
     });
@@ -3722,13 +4219,15 @@ describe('TronWeb.transactionBuilder', function () {
     describe("#estimateEnergy", async function () {
 
         let transaction;
+        let contractAddress;
+        let contractAddressWithArray;
+        let contractAddressWithTrctoken;
         before(async function () {
-            this.timeout(20000);
             transaction = await tronWeb.transactionBuilder.createSmartContract({
-                abi: testSetVal.abi,
-                bytecode: testSetVal.bytecode
-            }, accounts.hex[5]);
-            await broadcaster.broadcaster(null, accounts.pks[5], transaction);
+                abi: testConstant.abi,
+                bytecode: testConstant.bytecode
+            }, accounts.hex[6]);
+            await broadcaster.broadcaster(null, accounts.pks[6], transaction);
             while (true) {
                 const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
                 if (Object.keys(tx).length === 0) {
@@ -3738,46 +4237,242 @@ describe('TronWeb.transactionBuilder', function () {
                     break;
                 }
             }
+            contractAddress = transaction.contract_address;
+
+            transaction = await tronWeb.transactionBuilder.createSmartContract({
+                abi: testAddressArray.abi,
+                bytecode: testAddressArray.bytecode,
+                permissionId: 2,
+                parameters: [
+                    [accounts.hex[16], accounts.hex[17], accounts.hex[18]]
+                ]
+            }, accounts.hex[6]);
+            await broadcaster.broadcaster(null, accounts.pks[6], transaction);
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            contractAddressWithArray = transaction.contract_address;
+
+            const options = {
+                abi: trcTokenTest070.abi,
+                bytecode: trcTokenTest070.bytecode,
+                parameters: [
+                    accounts.hex[18], TOKEN_ID, 123
+                ],
+                callValue:321,
+                tokenId:TOKEN_ID,
+                tokenValue:1e3,
+                feeLimit: 9e7,
+            };
+            transaction = await tronWeb.transactionBuilder.createSmartContract(options, ADDRESS_HEX);
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+            let createInfo
+            while (true) {
+                createInfo = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                if (Object.keys(createInfo).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            contractAddressWithTrctoken = transaction.contract_address;
         })
 
-        it('should estimate energy successfully', async function () {
-            this.timeout(20000);
-            const contractAddress = transaction.contract_address;
-            const issuerAddress = accounts.hex[5];
-            const functionSelector = 'set(uint256)';
+        it('estimateEnergy simple', async function () {
+            const issuerAddress = accounts.hex[6];
+            const functionSelector = 'testPure(uint256,uint256)';
             const parameter = [
-                {type: 'uint256', value: 1}
-            ]
-            const options = {estimateEnery: true};
-
-            for (let i = 0; i < 2; i++) {
-                if (i === 1) options.permissionId = 2;
-                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddress, functionSelector, options,
-                    parameter, issuerAddress);
-                assert.isTrue(result.result.result);
-                assert.isDefined(result.energy_required);
-                assert.isNumber(result.energy_required);
-            }
-        });
-
-        it('should estimate confirmed energy successfully', async function () {
-            this.timeout(20000);
-            const contractAddress = transaction.contract_address;
-            const issuerAddress = accounts.hex[5];
-            const functionSelector = 'set(uint256)';
-            const parameter = [
+                {type: 'uint256', value: 1},
                 {type: 'uint256', value: 2}
             ]
-            const options = {estimateEnery: true, confirmed: true};
-
+            const options1 = {estimateEnery: true, confirmed: true};
+            let energyRequired1;
             for (let i = 0; i < 2; i++) {
-                if (i === 1) options.permissionId = 2;
-                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddress, functionSelector, options,
+                if (i === 1) options1.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddress, functionSelector, options1,
                     parameter, issuerAddress);
+                console.log("result1: "+util.inspect(result,true,null,true))
                 assert.isTrue(result.result.result);
                 assert.isDefined(result.energy_required);
                 assert.isNumber(result.energy_required);
+                energyRequired1 = result.energy_required;
             }
+
+            const options2 = {estimateEnery: true};
+            let energyRequired2;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options2.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddress, functionSelector, options2,
+                    parameter, issuerAddress);
+                console.log("result2: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired2 = result.energy_required;
+            }
+            assert.equal(energyRequired1,energyRequired2)
+        });
+
+        it('estimateEnergy with array[2] parameters', async function () {
+            const functionSelector = 'transferWith2(address[2],uint256[2])';
+            const parameter = [
+                {type: 'address[2]', value: [accounts.hex[16], accounts.hex[17]]},
+                {type: 'uint256[2]', value: [123456, 123456]}
+            ]
+            const options1 = {estimateEnery: true, confirmed: true};
+            let energyRequired1;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options1.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddressWithArray, functionSelector, options1,
+                    parameter, accounts.hex[6]);
+                console.log("result1: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired1 = result.energy_required;
+            }
+
+            const options2 = {estimateEnery: true};
+            let energyRequired2;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options2.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddressWithArray, functionSelector, options2,
+                    parameter, accounts.hex[6]);
+                console.log("result2: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired2 = result.energy_required;
+            }
+            assert.equal(energyRequired1,energyRequired2)
+        });
+
+        it('estimateEnergy with array[] parameters', async function () {
+            const functionSelector = 'transferWithArray(address[],uint256[])';
+            const parameter = [
+                {type: 'address[]', value: [accounts.hex[16], accounts.hex[17]]},
+                {type: 'uint256[]', value: [123456, 123456]}
+            ]
+            const options1 = {estimateEnery: true, confirmed: true};
+            let energyRequired1;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options1.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddressWithArray, functionSelector, options1,
+                    parameter, accounts.hex[6]);
+                console.log("result1: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired1 = result.energy_required;
+            }
+
+            const options2 = {estimateEnery: true};
+            let energyRequired2;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options2.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddressWithArray, functionSelector, options2,
+                    parameter, accounts.hex[6]);
+                console.log("result2: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired2 = result.energy_required;
+            }
+            assert.equal(energyRequired1,energyRequired2)
+        });
+
+        it.only('estimateEnergy with trctoken payable parameters', async function () {
+            // before balance
+            const accountTrxBalanceBefore = await tronWeb.trx.getBalance(contractAddressWithTrctoken);
+            const accountbefore = await tronWeb.trx.getAccount(contractAddressWithTrctoken);
+            const accountTrc10BalanceBefore = accountbefore.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value;
+            console.log("accountTrxBalanceBefore:"+accountTrxBalanceBefore);
+            console.log("accountTrc10BalanceBefore:"+accountTrc10BalanceBefore);
+
+            const functionSelector = 'TransferTokenTo(address,trcToken,uint256)';
+            const parameter = [
+                {type: 'address', value: accounts.hex[17]},
+                {type: 'trcToken', value: TOKEN_ID},
+                {type: 'uint256', value: 123}
+            ];
+            const options = {
+                callValue:321,
+                tokenId:TOKEN_ID,
+                tokenValue:1e3,
+                feeLimit:FEE_LIMIT
+            };
+            const transaction = await tronWeb.transactionBuilder.triggerSmartContract(contractAddressWithTrctoken,  functionSelector, options,
+                parameter, ADDRESS_HEX);
+            const res = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction.transaction);
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transaction.transaction.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    console.log("tx: "+util.inspect(tx,true,null,true))
+                    break;
+                }
+            }
+            // after token balance
+            const accountTrxBalanceAfter = await tronWeb.trx.getBalance(contractAddressWithTrctoken);
+            console.log("accountTrxBalanceAfter:"+accountTrxBalanceAfter);
+            const accountAfter = await tronWeb.trx.getAccount(contractAddressWithTrctoken);
+            const accountTrc10BalanceAfter = accountAfter.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value;
+            console.log("accountTrc10BalanceAfter:"+accountTrc10BalanceAfter);
+            const toAddressAfter = await tronWeb.trx.getAccount(accounts.hex[17]);
+            const toAddressTrc10BalanceAfter = toAddressAfter.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value;
+            console.log("toAddressTrc10BalanceAfter:"+toAddressTrc10BalanceAfter);
+            assert.equal(accountTrxBalanceAfter,(accountTrxBalanceBefore+321));
+            assert.equal(accountTrc10BalanceAfter,(accountTrc10BalanceBefore+1e3-123));
+            assert.equal(toAddressTrc10BalanceAfter,123);
+
+            const options1 = {
+                callValue:321,
+                tokenId:TOKEN_ID,
+                tokenValue:1e3,
+                feeLimit:FEE_LIMIT,
+                estimateEnery: true,
+                confirmed: true
+            };
+            let energyRequired1;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options1.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddressWithTrctoken, functionSelector, options1,
+                    parameter, ADDRESS_HEX);
+                console.log("result1: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired1 = result.energy_required;
+            }
+
+            const options2 = {
+                callValue:321,
+                tokenId:TOKEN_ID,
+                tokenValue:1e3,
+                feeLimit:FEE_LIMIT,
+                estimateEnery: true
+            };
+            let energyRequired2;
+            for (let i = 0; i < 2; i++) {
+                if (i === 1) options2.permissionId = 2;
+                const result = await tronWeb.transactionBuilder.estimateEnergy(contractAddressWithTrctoken, functionSelector, options2,
+                    parameter, ADDRESS_HEX);
+                console.log("result2: "+util.inspect(result,true,null,true))
+                assert.isTrue(result.result.result);
+                assert.isDefined(result.energy_required);
+                assert.isNumber(result.energy_required);
+                energyRequired2 = result.energy_required;
+            }
+            assert.equal(energyRequired1,energyRequired2)
         });
     });
 });

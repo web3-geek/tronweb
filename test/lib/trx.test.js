@@ -2228,7 +2228,7 @@ describe('TronWeb.trx', function () {
 
         });
     });
-   
+
     describe("#signMessageV2", async function() {
         tests.forEach(function(test) {
             it('signs a message "' + test.name + '"', async function () {

@@ -665,7 +665,7 @@ export default class TransactionBuilder {
         if(toHex(receiverAddress) === toHex(address)) {
             return callback('Receiver address must not be the same as owner address');
         }
-    
+
         const data = {
             owner_address: toHex(address),
             receiver_address: toHex(receiverAddress),
