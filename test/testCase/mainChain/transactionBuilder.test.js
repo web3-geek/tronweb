@@ -4223,7 +4223,7 @@ describe('TronWeb.transactionBuilder', function () {
         let contractAddressWithArray;
         let contractAddressWithTrctoken;
         before(async function () {
-            transaction = await tronWeb.transactionBuilder.createSmartContract({
+            /*transaction = await tronWeb.transactionBuilder.createSmartContract({
                 abi: testConstant.abi,
                 bytecode: testConstant.bytecode
             }, accounts.hex[6]);
@@ -4282,7 +4282,8 @@ describe('TronWeb.transactionBuilder', function () {
                     break;
                 }
             }
-            contractAddressWithTrctoken = transaction.contract_address;
+            contractAddressWithTrctoken = transaction.contract_address;*/
+            contractAddressWithTrctoken = 'TBe5miPB9JqTLg6izH4KbwqXgHvhWbFe7X';
         })
 
         it('estimateEnergy simple', async function () {
@@ -4388,7 +4389,7 @@ describe('TronWeb.transactionBuilder', function () {
             assert.equal(energyRequired1,energyRequired2)
         });
 
-        it.only('estimateEnergy with trctoken payable parameters', async function () {
+        it('estimateEnergy with trctoken payable parameters', async function () {
             // before balance
             const accountTrxBalanceBefore = await tronWeb.trx.getBalance(contractAddressWithTrctoken);
             const accountbefore = await tronWeb.trx.getAccount(contractAddressWithTrctoken);
@@ -4411,6 +4412,8 @@ describe('TronWeb.transactionBuilder', function () {
             const transaction = await tronWeb.transactionBuilder.triggerSmartContract(contractAddressWithTrctoken,  functionSelector, options,
                 parameter, ADDRESS_HEX);
             const res = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction.transaction);
+            console.log("transaction: "+util.inspect(transaction,true,null,true))
+            console.log("res: "+util.inspect(res,true,null,true))
             while (true) {
                 const tx = await tronWeb.trx.getTransactionInfo(transaction.transaction.txID);
                 if (Object.keys(tx).length === 0) {
@@ -4438,7 +4441,6 @@ describe('TronWeb.transactionBuilder', function () {
                 callValue:321,
                 tokenId:TOKEN_ID,
                 tokenValue:1e3,
-                feeLimit:FEE_LIMIT,
                 estimateEnery: true,
                 confirmed: true
             };
@@ -4458,7 +4460,6 @@ describe('TronWeb.transactionBuilder', function () {
                 callValue:321,
                 tokenId:TOKEN_ID,
                 tokenValue:1e3,
-                feeLimit:FEE_LIMIT,
                 estimateEnery: true
             };
             let energyRequired2;
@@ -4473,6 +4474,32 @@ describe('TronWeb.transactionBuilder', function () {
                 energyRequired2 = result.energy_required;
             }
             assert.equal(energyRequired1,energyRequired2)
+
+            const transaction2 = await tronWeb.transactionBuilder.triggerSmartContract(contractAddressWithTrctoken,  functionSelector, options,
+                parameter, ADDRESS_HEX);
+            const res2 = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction2.transaction);
+            console.log("transaction2: "+util.inspect(transaction2,true,null,true))
+            console.log("res2: "+util.inspect(res2,true,null,true))
+            while (true) {
+                const tx2 = await tronWeb.trx.getTransactionInfo(transaction2.transaction.txID);
+                if (Object.keys(tx2).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    console.log("tx2: "+util.inspect(tx2,true,null,true))
+                    break;
+                }
+            }
+
+            const options3 = {
+                callValue:321,
+                tokenId:TOKEN_ID,
+                tokenValue:1e3,
+                _isConstant: true
+            };
+            const transaction3 = await tronWeb.transactionBuilder.triggerConstantContract(contractAddressWithTrctoken,  functionSelector, options3,
+                parameter, ADDRESS_HEX);
+            console.log("transaction3: "+util.inspect(transaction3,true,null,true))
         });
     });
 });

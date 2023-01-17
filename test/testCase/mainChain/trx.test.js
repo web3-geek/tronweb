@@ -15,6 +15,7 @@ const ethers = require('ethers');
 
 const {
     ADDRESS_BASE58,
+    ADDRESS_HEX,
     PRIVATE_KEY,
     getTokenOptions,
     FULL_NODE_API,
@@ -1873,17 +1874,27 @@ describe('TronWeb.trx', function () {
         });
 
 
-        describe.only("#getProposal", async function () {
+        describe("#getProposal", async function () {
 
             let proposals;
 
             before(async function(){
                 // create proposal
-                let parameters = [{"key": 72, "value": 1},{"key": 73, "value": 100000000000},{"key": 74, "value": 1000},{"key": 75, "value": 10000}]
+                let parameters = [{"key": 72, "value": 1},{"key": 73, "value": 10},{"key": 74, "value": 1000},{"key": 75, "value": 20000}]
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.createProposal(parameters[0], WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.createProposal(parameters[1], WITNESS_ACCOUNT)
+                );
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY,
+                    await tronWeb.transactionBuilder.createProposal(parameters[2], WITNESS_ACCOUNT)
+                );
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY,
+                    await tronWeb.transactionBuilder.createProposal(parameters[3], WITNESS_ACCOUNT)
                 );
                 await wait(30);
                 proposals = await tronWeb.trx.listProposals();
@@ -1900,12 +1911,34 @@ describe('TronWeb.trx', function () {
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.voteProposal(1, true, WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.voteProposal(6, true, WITNESS_ACCOUNT)
                 );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY2,
-                    await tronWeb.transactionBuilder.voteProposal(1, true, WITNESS_ACCOUNT2)
+                    await tronWeb.transactionBuilder.voteProposal(6, true, WITNESS_ACCOUNT2)
+                );
+
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY,
+                    await tronWeb.transactionBuilder.voteProposal(7, true, WITNESS_ACCOUNT)
+                );
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY2,
+                    await tronWeb.transactionBuilder.voteProposal(7, true, WITNESS_ACCOUNT2)
+                );
+
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY,
+                    await tronWeb.transactionBuilder.voteProposal(8, true, WITNESS_ACCOUNT)
+                );
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY2,
+                    await tronWeb.transactionBuilder.voteProposal(8, true, WITNESS_ACCOUNT2)
                 );
             })
 
@@ -2098,10 +2131,14 @@ describe('TronWeb.trx', function () {
         const idx = 10;
 
         before(async function(){
-            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.hex[idx]);
-            await broadcaster(null, accounts.pks[idx], transaction2);
+            await broadcaster.broadcaster(null, accounts.pks[idx], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.hex[idx]));
+            await broadcaster.broadcaster(null, accounts.pks[idx], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY', accounts.hex[idx]));
+            await wait(40);
             const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx + 1], 'BANDWIDTH', accounts.hex[idx]);
-            await broadcaster(null, accounts.pks[idx], transaction);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
+            const transaction3 = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx + 1], 'ENERGY', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction3);
+            await wait(40);
         });
 
         it('should get the resource delegation information', async function () {
@@ -2109,6 +2146,7 @@ describe('TronWeb.trx', function () {
             let delegationInfo;
             for (let type of addressType) {
                 delegationInfo = await tronWeb.trx.getDelegatedResourceV2(accounts[type][idx], accounts[type][idx + 1]);
+                console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
                 assert.isDefined(delegationInfo.delegatedResource);
             }
         });
@@ -2121,14 +2159,17 @@ describe('TronWeb.trx', function () {
 
         it('should not throw error when fromAddress and toAddress are omitted', async function () {
             const delegationInfo = await tronWeb.trx.getDelegatedResourceV2();
+            console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
         });
 
         it('should not throw error when toAddress is omitted', async function () {
             const delegationInfo = await tronWeb.trx.getDelegatedResourceV2(accounts['hex'][idx]);
+            console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
         });
 
         it('should not throw error when options is omitted', function (done) {
-            tronWeb.trx.getDelegatedResourceV2(accounts['hex'][idx], accounts['hex'][idx + 1], done);
+            const delegationInfo = tronWeb.trx.getDelegatedResourceV2(accounts['hex'][idx], accounts['hex'][idx + 1], done);
+            console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
         });
 
         it('should throw origin address is not valid error', async function () {
@@ -2144,7 +2185,6 @@ describe('TronWeb.trx', function () {
                 'Invalid address provided'
             );
         });
-
     });
 
     describe("#getDelegatedResourceAccountIndexV2", async function () {
@@ -2152,10 +2192,18 @@ describe('TronWeb.trx', function () {
         const idx = 10;
 
         before(async function(){
-            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH');
-            await broadcaster(null, PRIVATE_KEY, transaction2);
-            const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx], 'BANDWIDTH', tronWeb.defaultAddress.hex);
-            await broadcaster(null, PRIVATE_KEY, transaction);
+            await broadcaster.broadcaster(null, accounts.pks[idx], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH',accounts.b58[idx]));
+            await broadcaster.broadcaster(null, accounts.pks[idx], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY',accounts.b58[idx]));
+            await wait(40);
+            const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx+1], 'BANDWIDTH', accounts.b58[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
+            const transaction3 = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[idx+2], 'ENERGY', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction3);
+            const transaction4 = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[idx+3], 'BANDWIDTH', accounts.hex[idx],true);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction4);
+            const transaction5 = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx+4], 'ENERGY', accounts.b58[idx],true);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction5);
+            await wait(40);
         });
 
         it('should get the resource delegation account information', async function () {
@@ -2163,16 +2211,20 @@ describe('TronWeb.trx', function () {
             let delegationInfo;
             for (let type of addressType) {
                 delegationInfo = await tronWeb.trx.getDelegatedResourceAccountIndexV2(accounts[type][idx]);
+                console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
                 assert.isDefined(delegationInfo.account);
                 assert.isArray(delegationInfo.toAccounts);
+                assert.equal(delegationInfo.toAccounts.length,4)
             }
         });
 
         it('should get the resource delegation account information when options is omitted', function (done) {
             tronWeb.trx.getDelegatedResourceAccountIndexV2(accounts.hex[idx], (err, delegationInfo) => {
                 if (err) return done(err);
+                console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
                 assert.isDefined(delegationInfo.account);
                 assert.isArray(delegationInfo.toAccounts);
+                assert.equal(delegationInfo.toAccounts.length,4)
                 done();
             });
         });
@@ -2180,14 +2232,18 @@ describe('TronWeb.trx', function () {
         it('should get the resource delegation account information when confirmed is true', async function () {
             await wait(10); // wait for solidity
             const delegationInfo = await tronWeb.trx.getDelegatedResourceAccountIndexV2(accounts['hex'][idx], { confirmed: true });
+            console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
             assert.isDefined(delegationInfo.account);
             assert.isArray(delegationInfo.toAccounts);
+            assert.equal(delegationInfo.toAccounts.length,4)
         });
 
         it('should get the resource delegation account information when origin address is omitted', async function () {
             const delegationInfo = await tronWeb.trx.getDelegatedResourceAccountIndexV2();
+            console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
             assert.isDefined(delegationInfo.account);
             assert.isArray(delegationInfo.toAccounts);
+            assert.isTrue(delegationInfo.toAccounts.length>2)
         });
 
         it('should throw address is not valid error', async function () {
@@ -2204,53 +2260,80 @@ describe('TronWeb.trx', function () {
         const idx = 10;
 
         before(async function(){
+            const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'ENERGY', accounts.hex[idx]);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
             const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[idx]);
-            await broadcaster(null, accounts.pks[idx], transaction2);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction2);
+            await wait(40);
         });
 
         it('should get the max resource can delegate', async function () {
             const addressType = ['hex', 'b58'];
+            let max_size_bandwidth;
             for (let type of addressType) {
-                const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts[type][idx], 0);
+                const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts[type][idx], "BANDWIDTH");
+                console.log(accounts[type][idx]+"-BANDWIDTH-max_size: "+max_size)
                 assert.isNumber(max_size);
+                max_size_bandwidth = max_size;
+            }
+            const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts.hex[idx]);
+            console.log(accounts.hex[idx]+"-BANDWIDTH-max_size: "+max_size)
+            assert.isNumber(max_size);
+            assert.equal(max_size_bandwidth,max_size);
+            for (let type of addressType) {
+                const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts[type][idx], "ENERGY");
+                console.log(accounts[type][idx]+"-ENERGY-max_size: "+max_size)
+                assert.isNumber(max_size);
+                assert.isTrue(max_size>=10000000);
             }
         });
 
         it('should get the max resource can delegate when options is omitted', function (done) {
-            tronWeb.trx.getCanDelegatedMaxSize(accounts.hex[idx], 0, (err, { max_size }) => {
+            tronWeb.trx.getCanDelegatedMaxSize(accounts.hex[idx], "BANDWIDTH", (err, max_size) => {
                 if (err) return done(err);
-                assert.isNumber(max_size);
+                console.log("max_size: "+util.inspect(max_size,true,null,true));
+                assert.isNumber(max_size.max_size);
                 done();
             });
         });
 
         it('should get the max resource can delegate when confirmed is true', async function () {
             await wait(10); // wait for solidity
-            const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts['hex'][idx], 0, { confirmed: true });
+            const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts['hex'][idx], "BANDWIDTH", { confirmed: true });
+            console.log("max_size: "+max_size)
             assert.isNumber(max_size);
+            assert.isTrue(max_size>1000000);
         });
 
         it('should get the max resource can delegate when resource type is omitted', async function () {
             const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(accounts['hex'][idx]);
+            console.log("max_size: "+max_size)
             assert.isNumber(max_size);
+            assert.isTrue(max_size>1000000);
         });
 
         it('should get the max resource can delegate when address and resource type are omitted', async function () {
-            const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize();
+            const { max_size } = await tronWeb.trx.getCanDelegatedMaxSize(ADDRESS_HEX);
+            console.log("max_size: "+util.inspect(max_size,true,null,true))
             assert.isNumber(max_size);
+            const max_size2 = await tronWeb.trx.getCanDelegatedMaxSize();
+            console.log("max_size2: "+util.inspect(max_size2.max_size,true,null,true))
+            assert.isNumber(max_size2.max_size);
+            assert.isTrue(max_size2.max_size>1000000);
+            assert.equal(max_size,max_size2.max_size)
         });
 
         it('should throw address is not valid error', async function () {
             await assertThrow(
-                tronWeb.trx.getCanDelegatedMaxSize('notAnAddress', 0),
+                tronWeb.trx.getCanDelegatedMaxSize('notAnAddress', "ENERGY"),
                 'Invalid address provided'
             );
         });
 
         it('should throw resource type is not valid error', async function () {
             await assertThrow(
-                tronWeb.trx.getCanDelegatedMaxSize(accounts.hex[idx], 2),
-                'Invalid resource type provided: Expected 0 or 1'
+                tronWeb.trx.getCanDelegatedMaxSize(accounts.hex[idx], "ENER"),
+                'Invalid resource provided: Expected "BANDWIDTH" or "ENERGY"'
             );
         });
     });
@@ -2261,9 +2344,16 @@ describe('TronWeb.trx', function () {
 
         it('should get the times user can do UnFreezeBalanceV2', async function () {
             const addressType = ['hex', 'b58'];
+            let count1;
             for (let type of addressType) {
                 const { count } = await tronWeb.trx.getAvailableUnfreezeCount(accounts[type][idx]);
+                console.log("count:"+count)
                 assert.isNumber(count);
+                assert.isTrue(count>30)
+                if (type === 'b58') {
+                    assert.equal(count1,count)
+                }
+                count1 = count;
             }
         });
 
@@ -2271,18 +2361,24 @@ describe('TronWeb.trx', function () {
             tronWeb.trx.getAvailableUnfreezeCount(accounts.hex[idx], (err, { count }) => {
                 if (err) return done(err);
                 assert.isNumber(count);
+                console.log("count:"+count)
+                assert.isTrue(count>30)
                 done();
             });
         });
 
         it('should get the times user can do UnFreezeBalanceV2 when confirmed is true', async function () {
             const { count } = await tronWeb.trx.getAvailableUnfreezeCount(accounts['hex'][idx], { confirmed: true });
+            console.log("count:"+count)
+            assert.isTrue(count>30)
             assert.isNumber(count);
         });
 
         it('should get the times user can do UnFreezeBalanceV2 when address is omitted', async function () {
             const { count } = await tronWeb.trx.getAvailableUnfreezeCount();
+            console.log("count:"+count)
             assert.isNumber(count);
+            assert.isTrue(count>30)
         });
 
         it('should throw address is not valid error', async function () {
@@ -2300,29 +2396,33 @@ describe('TronWeb.trx', function () {
 
         before(async function(){
             const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY', accounts.hex[idx]);
-            await broadcaster(null, accounts.pks[idx], transaction2);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction2);
             const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.hex[idx], accounts.hex[idx + 1]);
-            await broadcaster(null, accounts.pks[idx], transaction);
+            await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
 
             const transaction3 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY');
-            await broadcaster(null, PRIVATE_KEY, transaction3);
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction3);
             const transaction4 = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', tronWeb.defaultAddress.hex, accounts.hex[idx + 1]);
-            await broadcaster(null, PRIVATE_KEY, transaction4);
-            await wait(65);
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction4);
+            await wait(45);
         });
 
         it('should get the amount of a widrawUnfreeze operation', async function () {
             const addressType = ['hex', 'b58'];
             for (let type of addressType) {
                 const { amount } = await tronWeb.trx.getCanWithdrawUnfreezeAmount(accounts[type][idx], Date.now());
+                console.log("amount: "+amount)
                 assert.isNumber(amount);
+                assert.equal(amount,10e6)
             }
         });
 
         it('should get the amount of a widrawUnfreeze operation when options is omitted', function (done) {
             tronWeb.trx.getCanWithdrawUnfreezeAmount(accounts.hex[idx], Date.now(), (err, { amount }) => {
                 if (err) return done(err);
+                console.log("amount: "+amount)
                 assert.isNumber(amount);
+                assert.equal(amount,10e6)
                 done();
             });
         });
@@ -2330,11 +2430,14 @@ describe('TronWeb.trx', function () {
         it('should get the amount of a widrawUnfreeze operation when confirmed is true', async function () {
             const { amount } = await tronWeb.trx.getCanWithdrawUnfreezeAmount(accounts['hex'][idx], Date.now(), { confirmed: true });
             assert.isNumber(amount);
+            assert.equal(amount,10e6)
         });
 
         it('should get the amount of a widrawUnfreeze operation when address and timestamp are omitted', async function () {
             const { amount } = await tronWeb.trx.getCanWithdrawUnfreezeAmount();
+            console.log("amount: "+amount)
             assert.isNumber(amount);
+            assert.isTrue(amount >1e6)
         });
 
         it('should throw address is not valid error', async function () {

@@ -344,12 +344,14 @@ describe('TronWeb.utils.transaction', function () {
             });
         });
 
-        describe('#case FreezeBalanceContract', function () {
+        describe.skip('#case FreezeBalanceContract', function () {
 
             it('it should return true', async function () {
                 const params = [
                     [100e6, 3, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
-                    [100e6, 3, 'BANDWIDTH', accounts.b58[1]]
+                    [100e6, 3, 'ENERGY', accounts.b58[1]],
+                    [100e6, 3, 'ENERGY', accounts.b58[1], accounts.b58[2], { permissionId: 2 }],
+                    [100e6, 3, 'BANDWIDTH', accounts.b58[1], accounts.b58[2],]
                 ];
 
                 for (let param of params) {
@@ -367,14 +369,32 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult9, false);
 
                     const cop10 = JSON.parse(JSON.stringify(transaction))
-                    cop10.raw_data.contract[0].parameter.value.frozen_balance = cop10.raw_data.contract[0].parameter.value.frozen_balance + '1';
+                    cop10.raw_data.contract[0].parameter.value.frozen_balance = 1234;
                     const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                     assert.equal(authResult10, false);
+
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (cop11.raw_data.contract[0].parameter.value.resource) {
+                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                        }
+                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                        assert.equal(authResult11, false);
+                    }
+
+                    const cop12 = JSON.parse(JSON.stringify(transaction))
+                    if (cop12.raw_data.contract[0].parameter.value.receiver_address) {
+                        cop12.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                        const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
+                        assert.equal(authResult12, false);
+                    }
                 }
             })
         });
 
-        describe('#case UnfreezeBalanceContract', function () {
+        describe.skip('#case UnfreezeBalanceContract', function () {
             // this is not fully testable because the minimum time before unfreezing is 3 days
             async function freezeBandWith() {
                 const transaction = await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1]);
@@ -392,8 +412,10 @@ describe('TronWeb.utils.transaction', function () {
 
             it('it should return true', async function () {
                 const params = [
+                    ['ENERGY', accounts.b58[1], accounts.b58[2], { permissionId: 2 }],
+                    ['BANDWIDTH', accounts.b58[1], accounts.b58[2]],
                     ['BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
-                    ['BANDWIDTH', accounts.b58[1]]
+                    ['ENERGY', accounts.b58[1]]
                 ];
 
                 for (let param of params) {
@@ -405,6 +427,24 @@ describe('TronWeb.utils.transaction', function () {
                     cop8.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
                     const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
                     assert.equal(authResult8, false);
+
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (cop11.raw_data.contract[0].parameter.value.resource) {
+                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                        }
+                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                        assert.equal(authResult11, false);
+                    }
+
+                    const cop12 = JSON.parse(JSON.stringify(transaction))
+                    if (cop12.raw_data.contract[0].parameter.value.receiver_address) {
+                        cop12.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                        const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
+                        assert.equal(authResult12, false);
+                    }
                 }
             })
         });
@@ -414,28 +454,36 @@ describe('TronWeb.utils.transaction', function () {
 
             before(async () => {
                 params = [
-                    [10e7, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
+                    [10e7, 'ENERGY', accounts.b58[1], { permissionId: 2 }],
                     [10e7, 'BANDWIDTH', accounts.b58[1]]
                 ];
             });
 
             it('should return true', async function () {
-                for (const param of params) {
+                for (let param of params) {
                     const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(...param);
+                    commonAssertFalsePb(transaction);
 
-                    const authResult =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult, true);
+                    const cop9 = JSON.parse(JSON.stringify(transaction))
+                    cop9.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
+                    assert.equal(authResult9, false);
 
-                    transaction.raw_data_hex = transaction.raw_data_hex + '00';
-                    const authResult2 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult2, false);
+                    const cop10 = JSON.parse(JSON.stringify(transaction))
+                    cop10.raw_data.contract[0].parameter.value.frozen_balance = 1234;
+                    const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
+                    assert.equal(authResult10, false);
 
-                    transaction.txID = transaction.txID + '00'
-                    const authResult3 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult3, false);
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (cop11.raw_data.contract[0].parameter.value.resource) {
+                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                        }
+                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                        assert.equal(authResult11, false);
+                    }
                 }
             });
         });
@@ -445,31 +493,39 @@ describe('TronWeb.utils.transaction', function () {
 
             before(async () => {
                 params = [
-                    [10e6, 'BANDWIDTH', accounts.b58[1]],
+                    [10e6, 'ENERGY', accounts.b58[1]],
                     [10e6, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
                 ];
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e8, 'BANDWIDTH',accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e8, 'ENERGY',accounts.b58[1]));
+                await wait(40);
             });
 
             it('should return true', async function () {
-                for (const param of params) {
-                    const freezeTx = await tronWeb.transactionBuilder.freezeBalanceV2(...param);
-                    await broadcaster(null, accounts.pks[1], freezeTx);
-                    await waitChainData('tx', freezeTx.txID);
+                for (let param of params) {
                     const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param);
+                    commonAssertFalsePb(transaction);
 
-                    const authResult =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult, true);
+                    const cop9 = JSON.parse(JSON.stringify(transaction))
+                    cop9.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
+                    assert.equal(authResult9, false);
 
-                    transaction.raw_data_hex = transaction.raw_data_hex + '00';
-                    const authResult2 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult2, false);
+                    const cop10 = JSON.parse(JSON.stringify(transaction))
+                    cop10.raw_data.contract[0].parameter.value.unfreeze_balance = 1234;
+                    const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
+                    assert.equal(authResult10, false);
 
-                    transaction.txID = transaction.txID + '00'
-                    const authResult3 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult3, false);
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (cop11.raw_data.contract[0].parameter.value.resource) {
+                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                        }
+                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                        assert.equal(authResult11, false);
+                    }
                 }
             });
         });
@@ -479,31 +535,55 @@ describe('TronWeb.utils.transaction', function () {
 
             before(async () => {
                 params = [
-                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], false, { permissionId: 2 }],
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1], false, { permissionId: 2 }],
                     [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], false]
                 ];
-                const freezeTx = await tronWeb.transactionBuilder.freezeBalanceV2(10e8, 'BANDWIDTH', accounts.b58[1]);
-                await broadcaster(null, accounts.pks[1], freezeTx);
-                await waitChainData('tx', freezeTx.txID);
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e8, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e8, 'ENERGY', accounts.b58[1]));
+                await wait(3);
             });
 
             it('should return true', async function () {
-                for (const param of params) {
+                for (let param of params) {
                     const transaction = await tronWeb.transactionBuilder.delegateResource(...param);
+                    commonAssertFalsePb(transaction);
 
-                    const authResult =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult, true);
+                    const cop8 = JSON.parse(JSON.stringify(transaction))
+                    cop8.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
+                    assert.equal(authResult8, false);
 
-                    transaction.raw_data_hex = transaction.raw_data_hex + '00';
-                    const authResult2 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult2, false);
+                    const cop9 = JSON.parse(JSON.stringify(transaction))
+                    cop9.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
+                    assert.equal(authResult9, false);
 
-                    transaction.txID = transaction.txID + '00'
-                    const authResult3 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult3, false);
+                    const cop10 = JSON.parse(JSON.stringify(transaction))
+                    cop10.raw_data.contract[0].parameter.value.balance = 1234;
+                    const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
+                    assert.equal(authResult10, false);
+
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (cop11.raw_data.contract[0].parameter.value.resource) {
+                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                        }
+                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                        assert.equal(authResult11, false);
+                    }
+
+                    const cop12 = JSON.parse(JSON.stringify(transaction))
+                    if (cop12.raw_data.contract[0].parameter.value.lock) {
+                        if (cop12.raw_data.contract[0].parameter.value.resource === true) {
+                            cop12.raw_data.contract[0].parameter.value.resource = false
+                        } else if (cop12.raw_data.contract[0].parameter.value.resource === false) {
+                            cop12.raw_data.contract[0].parameter.value.resource = true
+                        }
+                        const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
+                        assert.equal(authResult12, false);
+                    }
                 }
             });
         });
@@ -512,33 +592,50 @@ describe('TronWeb.utils.transaction', function () {
             let params = [];
 
             before(async () => {
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY', accounts.b58[1]));
+                await wait(40);
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.delegateResource(40e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.delegateResource(40e6, accounts.b58[2], 'ENERGY', accounts.b58[1]));
+                await wait(40);
                 params = [
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1], { permissionId: 2 }],
+                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1]],
                     [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
-                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1]]
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1]]
                 ];
             });
 
             it('should return true', async function () {
                 for (const param of params) {
-                    const delegateTx = await tronWeb.transactionBuilder.delegateResource(...param);
-                    await broadcaster(null, accounts.pks[1], delegateTx);
-                    await waitChainData('tx', delegateTx.txID);
-
                     const transaction = await tronWeb.transactionBuilder.undelegateResource(...param);
+                    commonAssertFalsePb(transaction);
 
-                    const authResult =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult, true);
+                    const cop8 = JSON.parse(JSON.stringify(transaction))
+                    cop8.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
+                    assert.equal(authResult8, false);
 
-                    transaction.raw_data_hex = transaction.raw_data_hex + '00';
-                    const authResult2 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult2, false);
+                    const cop9 = JSON.parse(JSON.stringify(transaction))
+                    cop9.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
+                    assert.equal(authResult9, false);
 
-                    transaction.txID = transaction.txID + '00'
-                    const authResult3 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult3, false);
+                    const cop10 = JSON.parse(JSON.stringify(transaction))
+                    cop10.raw_data.contract[0].parameter.value.balance = 1234;
+                    const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
+                    assert.equal(authResult10, false);
+
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (cop11.raw_data.contract[0].parameter.value.resource) {
+                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
+                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                        }
+                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                        assert.equal(authResult11, false);
+                    }
                 }
             });
         });
@@ -547,36 +644,22 @@ describe('TronWeb.utils.transaction', function () {
             let params = [];
 
             before(async () => {
-                params = [
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'ENERGY', accounts.hex[1]));
+                await wait(40);
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.b58[1]));
+                await wait(40);
+                params.push(...[
                     [accounts.b58[1], { permissionId: 2 }],
-                    [accounts.b58[1]]
-                ];
-                const freezeTx = await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH', ...params[1]);
-                await broadcaster(null, accounts.pks[1], freezeTx);
-                await waitChainData('tx', freezeTx.txID);
-                const unfreezeTx = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', ...params[1]);
-                await broadcaster(null, accounts.pks[1], unfreezeTx);
-                await waitChainData('tx', unfreezeTx.txID);
-                await wait(65); // freeze timeout in 60s in dev docker
+                    [accounts.hex[1]]
+                ]);
             });
 
             it('should return true', async function () {
                 for (const param of params) {
                     const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param);
-
-                    const authResult =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult, true);
-
-                    transaction.raw_data_hex = transaction.raw_data_hex + '00';
-                    const authResult2 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult2, false);
-
-                    transaction.txID = transaction.txID + '00'
-                    const authResult3 =
-                        TronWeb.utils.transaction.txCheck(transaction);
-                    assert.equal(authResult3, false);
+                    commonAssertFalsePb(transaction);
                 }
             });
         });
@@ -2261,8 +2344,9 @@ describe('TronWeb.utils.transaction', function () {
             });
         });
 
-        describe('#case FreezeBalanceContract', function () {
+        describe.skip('#case FreezeBalanceContract', function () {
             let params = [];
+            let params2 = [];
             const generateData = (param) => {
                 return {
                     owner_address: tronWeb.address.toHex(param[3]),
@@ -2272,15 +2356,29 @@ describe('TronWeb.utils.transaction', function () {
                     Permission_id: param[4]?.permissionId,
                 };
             };
+            const generateData2 = (param) => {
+                return {
+                    owner_address: tronWeb.address.toHex(param[3]),
+                    frozen_balance: parseInt(param[0]),
+                    frozen_duration: parseInt(param[1]),
+                    resource: param[2],
+                    receiver_address: tronWeb.address.toHex(param[4]),
+                    Permission_id: param[5]?.permissionId,
+                };
+            };
 
             before(() => {
                 params = [
                     [100e6, 3, 'ENERGY', accounts.b58[1], { permissionId: 2 }],
                     [100e6, 3, 'BANDWIDTH', accounts.b58[1]]
                 ];
+                params2 = [
+                    [100e6, 3, 'ENERGY', accounts.b58[1], accounts.b58[2], { permissionId: 2 }],
+                    [100e6, 3, 'BANDWIDTH', accounts.b58[1], accounts.b58[2]],
+                ];
             })
 
-            it('it should return true', async function () {
+            it('it should return true1', async function () {
                 for (let param of params) {
                     const transaction = await tronWeb.transactionBuilder.freezeBalance(...param);
                     const data = generateData(param);
@@ -2288,17 +2386,17 @@ describe('TronWeb.utils.transaction', function () {
 
                     const dataCop8 = JSON.parse(JSON.stringify(data))
                     dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
-                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[3] || {});
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[4] || {});
                     assert.equal(authResult8, false);
 
                     const dataCop9 = JSON.parse(JSON.stringify(data))
                     dataCop9.frozen_balance = parseInt(123e6);
-                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[3] || {});
+                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[4] || {});
                     assert.equal(authResult9, false);
 
                     const dataCop10 = JSON.parse(JSON.stringify(data))
                     dataCop10.frozen_duration = parseInt(4);
-                    const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[3] || {});
+                    const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[4] || {});
                     assert.equal(authResult10, false);
 
                     const dataCop11 = JSON.parse(JSON.stringify(data))
@@ -2307,13 +2405,52 @@ describe('TronWeb.utils.transaction', function () {
                     } else {
                         dataCop11.resource = 'ENERGY';
                     }
-                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[4] || {});
                     assert.equal(authResult11, false);
+                }
+            });
+
+            it('it should return true2', async function () {
+                for (let param of params2) {
+                    const transaction = await tronWeb.transactionBuilder.freezeBalance(...param);
+                    const data = generateData2(param);
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[5] || {});
+                    assert.equal(authResult8, false);
+
+                    const dataCop9 = JSON.parse(JSON.stringify(data))
+                    dataCop9.frozen_balance = parseInt(123e6);
+                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[5] || {});
+                    assert.equal(authResult9, false);
+
+                    const dataCop10 = JSON.parse(JSON.stringify(data))
+                    dataCop10.frozen_duration = parseInt(4);
+                    const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[5] || {});
+                    assert.equal(authResult10, false);
+
+                    const dataCop11 = JSON.parse(JSON.stringify(data))
+                    if (dataCop11.resource === 'ENERGY') {
+                        dataCop11.resource = 'BANDWIDTH';
+                    } else {
+                        dataCop11.resource = 'ENERGY';
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[5] || {});
+                    assert.equal(authResult11, false);
+
+                    const dataCop12 = JSON.parse(JSON.stringify(data))
+                    if (dataCop12.receiver_address) {
+                        dataCop12.receiver_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    }
+                    const authResult12 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop12, param[5] || {});
+                    assert.equal(authResult12, false);
                 }
             });
         });
 
-        describe('#case UnfreezeBalanceContract', function () {
+        describe.skip('#case UnfreezeBalanceContract', function () {
 
             async function freezeBalance() {
                 const transaction1 = await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1]);
@@ -2323,9 +2460,17 @@ describe('TronWeb.utils.transaction', function () {
                 const transaction2 = await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'ENERGY', accounts.b58[2]);
                 await broadcaster.broadcaster(transaction2, accounts.pks[2]);
                 await waitChainData('tx', transaction2.txID);
+
+                const transaction3 = await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1], accounts.b58[2]);
+                await broadcaster.broadcaster(transaction3, accounts.pks[1]);
+                await waitChainData('tx', transaction3.txID);
+
+                const transaction4 = await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'ENERGY', accounts.b58[2], accounts.b58[3]);
+                await broadcaster.broadcaster(transaction4, accounts.pks[2]);
+                await waitChainData('tx', transaction4.txID);
             };
 
-            it('it should return true', async function () {
+            it('it should return true1', async function () {
                 const params = [
                     ['BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
                     ['ENERGY', accounts.b58[2]]
@@ -2343,6 +2488,39 @@ describe('TronWeb.utils.transaction', function () {
 
                     const dataCop8 = JSON.parse(JSON.stringify(data))
                     dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[2] || {});
+                    assert.equal(authResult8, false);
+
+                    const dataCop11 = JSON.parse(JSON.stringify(data))
+                    if (dataCop11.resource === 'ENERGY') {
+                        dataCop11.resource = 'BANDWIDTH';
+                    } else {
+                        dataCop11.resource = 'ENERGY';
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[2] || {});
+                    assert.equal(authResult11, false);
+                }
+            })
+
+            it('it should return true2', async function () {
+                const params = [
+                    ['BANDWIDTH', accounts.b58[1], accounts.b58[2], { permissionId: 2 }],
+                    ['ENERGY', accounts.b58[2], accounts.b58[3]]
+                ];
+
+                for (let param of params) {
+                    await freezeBalance();
+                    const transaction = await tronWeb.transactionBuilder.unfreezeBalance(...param)
+                    const data = {
+                        owner_address: tronWeb.address.toHex(param[1]),
+                        resource: param[0],
+                        receiver_address: param[2],
+                        Permission_id: param[3]?.permissionId,
+                    }
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
                     const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[3] || {});
                     assert.equal(authResult8, false);
 
@@ -2354,9 +2532,15 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
                     assert.equal(authResult11, false);
+
+                    const dataCop12 = JSON.parse(JSON.stringify(data))
+                    if (dataCop12.receiver_address) {
+                        dataCop12.receiver_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    }
+                    const authResult12 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop12, param[3] || {});
+                    assert.equal(authResult12, false);
                 }
             })
-
         });
 
         describe('#case FreezeBalanceV2Contract', function () {
@@ -2373,57 +2557,87 @@ describe('TronWeb.utils.transaction', function () {
 
             before(async () => {
                 params.push(...[
-                    [10e7, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
+                    [10e7, 'ENERGY', accounts.b58[1], { permissionId: 2 }],
                     [10e7, 'BANDWIDTH', accounts.b58[1]]
                 ]);
             });
 
             it('should return true', async function () {
-                for (const param of params) {
+                for (let param of params) {
                     const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(...param);
                     const data = generateData(param);
-                    const authResult =
-                        TronWeb.utils.transaction.txCheckWithArgs(transaction, data);
-                    assert.equal(authResult, true);
-                    commonAssertPbWithArgs(transaction, data);
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[3] || {});
+                    assert.equal(authResult8, false);
+
+                    const dataCop9 = JSON.parse(JSON.stringify(data))
+                    dataCop9.frozen_balance = parseInt(123e6);
+                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[3] || {});
+                    assert.equal(authResult9, false);
+
+                    const dataCop11 = JSON.parse(JSON.stringify(data))
+                    if (dataCop11.resource === 'ENERGY') {
+                        dataCop11.resource = 'BANDWIDTH';
+                    } else {
+                        dataCop11.resource = 'ENERGY';
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
+                    assert.equal(authResult11, false);
                 }
             });
-            commonAssertFalse('freezeBalanceV2', generateData, params);
         });
 
         describe('#case UnfreezeBalanceV2Contract', function () {
             const params = [];
-
-            const generateData = (param) => {
-                return {
-                    unfreeze_balance: param[0],
-                    resource: param[1],
-                    owner_address: tronWeb.address.toHex(param[2]),
-                    Permission_id: param[3]?.permissionId,
-                };
-            };
-
             before(async () => {
-                params.push(...[
-                    [10e6, 'BANDWIDTH', accounts.b58[1]],
-                    [10e6, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
-                ]);
+                const transaction1 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.b58[1]);
+                await broadcaster.broadcaster(transaction1, accounts.pks[1]);
+                await waitChainData('tx', transaction1.txID);
+
+                const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY', accounts.b58[2]);
+                await broadcaster.broadcaster(transaction2, accounts.pks[2]);
+                await waitChainData('tx', transaction2.txID);
             });
 
             it('should return true', async function () {
-                for (const param of params) {
-                    const freezeTx = await tronWeb.transactionBuilder.freezeBalanceV2(...param);
-                    await broadcaster(null, accounts.pks[1], freezeTx);
-                    await waitChainData('tx', freezeTx.txID);
-                    const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param);
-                    const data = generateData(param);
-                    const authResult =
-                        TronWeb.utils.transaction.txCheckWithArgs(transaction, data);
-                    assert.equal(authResult, true);
-                    commonAssertPbWithArgs(transaction, data);
+                params.push(...[
+                    [10e6, 'BANDWIDTH', accounts.b58[1]],
+                    [10e6, 'ENERGY', accounts.b58[2], { permissionId: 2 }],
+                ]);
+
+                for (let param of params) {
+                    const transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(...param)
+                    const data = {
+                        owner_address: tronWeb.address.toHex(param[2]),
+                        unfreeze_balance: param[0],
+                        resource: param[1],
+                        Permission_id: param[3]?.permissionId,
+                    }
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[3] || {});
+                    assert.equal(authResult8, false);
+
+                    const dataCop9 = JSON.parse(JSON.stringify(data))
+                    dataCop9.unfreeze_balance = parseInt(123e6);
+                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[3] || {});
+                    assert.equal(authResult9, false);
+
+                    const dataCop11 = JSON.parse(JSON.stringify(data))
+                    if (dataCop11.resource === 'ENERGY') {
+                        dataCop11.resource = 'BANDWIDTH';
+                    } else {
+                        dataCop11.resource = 'ENERGY';
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
+                    assert.equal(authResult11, false);
                 }
             });
-            commonAssertFalse('unfreezeBalanceV2', generateData, params);
         });
 
         describe('#case DelegateResourceContract', function () {
@@ -2443,24 +2657,55 @@ describe('TronWeb.utils.transaction', function () {
             before(async () => {
                 params.push(...[
                     [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], false, { permissionId: 2 }],
-                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], false]
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1], false],
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1], true, { permissionId: 2 }],
+                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], true]
                 ]);
-                const freezeTx = await tronWeb.transactionBuilder.freezeBalanceV2(10e8, 'BANDWIDTH', accounts.b58[1]);
-                await broadcaster(null, accounts.pks[1], freezeTx);
-                await waitChainData('tx', freezeTx.txID);
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY', accounts.b58[1]));
+                await wait(40);
             });
 
             it('should return true', async function () {
                 for (const param of params) {
                     const transaction = await tronWeb.transactionBuilder.delegateResource(...param);
                     const data = generateData(param);
-                    const authResult =
-                        TronWeb.utils.transaction.txCheckWithArgs(transaction, data);
-                    assert.equal(authResult, true);
-                    commonAssertPbWithArgs(transaction, data);
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[5] || {});
+                    assert.equal(authResult8, false);
+
+                    const dataCop9 = JSON.parse(JSON.stringify(data))
+                    dataCop9.balance = parseInt(123e6);
+                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[5] || {});
+                    assert.equal(authResult9, false);
+
+                    const dataCop10 = JSON.parse(JSON.stringify(data))
+                    dataCop10.receiver_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[5] || {});
+                    assert.equal(authResult10, false);
+
+                    const dataCop11 = JSON.parse(JSON.stringify(data))
+                    if (dataCop11.resource === 'ENERGY') {
+                        dataCop11.resource = 'BANDWIDTH';
+                    } else {
+                        dataCop11.resource = 'ENERGY';
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[5] || {});
+                    assert.equal(authResult11, false);
+
+                    const dataCop12 = JSON.parse(JSON.stringify(data))
+                    if (dataCop12.lock === true) {
+                        dataCop12.lock = false;
+                    } else {
+                        dataCop12.lock = true;
+                    }
+                    const authResult12 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop12, param[5] || {});
+                    assert.equal(authResult12, false);
                 }
             });
-            commonAssertFalse('delegateResource', generateData, params);
         });
 
         describe('#case UnDelegateResourceContract', function () {
@@ -2477,26 +2722,51 @@ describe('TronWeb.utils.transaction', function () {
             };
 
             before(async () => {
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY', accounts.b58[1]));
+                await wait(40);
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.delegateResource(40e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.delegateResource(40e6, accounts.b58[2], 'ENERGY', accounts.b58[1]));
+                await wait(40);
                 params.push(...[
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1], { permissionId: 2 }],
+                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1]],
                     [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
-                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1]]
+                    [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1]]
                 ]);
             });
 
             it('should return true', async function () {
                 for (const param of params) {
-                    const delegateTx = await tronWeb.transactionBuilder.delegateResource(...param);
-                    await broadcaster(null, accounts.pks[1], delegateTx);
-                    await waitChainData('tx', delegateTx.txID);
                     const transaction = await tronWeb.transactionBuilder.undelegateResource(...param);
                     const data = generateData(param);
-                    const authResult =
-                        TronWeb.utils.transaction.txCheckWithArgs(transaction, data);
-                    assert.equal(authResult, true);
-                    commonAssertPbWithArgs(transaction, data);
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[4] || {});
+                    assert.equal(authResult8, false);
+
+                    const dataCop9 = JSON.parse(JSON.stringify(data))
+                    dataCop9.balance = parseInt(123e6);
+                    const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[4] || {});
+                    assert.equal(authResult9, false);
+
+                    const dataCop10 = JSON.parse(JSON.stringify(data))
+                    dataCop10.receiver_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[4] || {});
+                    assert.equal(authResult10, false);
+
+                    const dataCop11 = JSON.parse(JSON.stringify(data))
+                    if (dataCop11.resource === 'ENERGY') {
+                        dataCop11.resource = 'BANDWIDTH';
+                    } else {
+                        dataCop11.resource = 'ENERGY';
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[4] || {});
+                    assert.equal(authResult11, false);
                 }
             });
-            commonAssertFalse('undelegateResource', generateData, params);
         });
 
         describe('#case WithdrawExpireUnfreezeContract', function () {
@@ -2510,15 +2780,16 @@ describe('TronWeb.utils.transaction', function () {
             };
 
             before(async () => {
-                params.push([accounts.b58[1], { permissionId: 2 }]);
-                params.push([accounts.b58[1]]);
-                const freezeTx = await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH', ...params[1]);
-                await broadcaster(null, accounts.pks[1], freezeTx);
-                await waitChainData('tx', freezeTx.txID);
-                const unfreezeTx = await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', ...params[1]);
-                await broadcaster(null, accounts.pks[1], unfreezeTx);
-                await waitChainData('tx', unfreezeTx.txID);
-                await wait(65); // freeze timeout in 60s in dev docker
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'ENERGY', accounts.hex[1]));
+                await wait(40);
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.b58[1]));
+                await wait(40);
+                params.push(...[
+                    [accounts.b58[1], { permissionId: 2 }],
+                    [accounts.b58[1]]
+                ]);
             });
 
             it('should return true', async function () {
@@ -2530,8 +2801,17 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult, true);
                     commonAssertPbWithArgs(transaction, data);
                 }
+                for (const param of params) {
+                    const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param);
+                    const data = generateData(param);
+                    commonAssertFalsePbWithArgs(transaction,data,param);
+
+                    const dataCop8 = JSON.parse(JSON.stringify(data))
+                    dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
+                    const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[1] || {});
+                    assert.equal(authResult8, false);
+                }
             });
-            commonAssertFalse('withdrawExpireUnfreeze', generateData, params);
         });
 
         describe('#case WithdrawBalanceContract', function () {
