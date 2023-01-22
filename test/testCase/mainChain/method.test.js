@@ -24,25 +24,26 @@ describe('#contract.index', function () {
 
     before(async function () {
         tronWeb = tronWebBuilder.createInstance();
-        // ALERT this works only with Tron Quickstart:
-        accounts = await tronWebBuilder.getTestAccounts(-1);
         emptyAccount = await TronWeb.createAccount();
+        await tronWebBuilder.newTestAccountsInMain(1);
+        accounts = await tronWebBuilder.getTestAccountsInMain(1);
     });
 
     describe('#customError', function () {
         let customError;
 
         before(async function () {
-            const tx = await broadcaster(tronWeb.transactionBuilder.createSmartContract({
-                abi: testCustomError.abi,
-                bytecode: testCustomError.bytecode
+            const tx = await broadcaster.broadcaster(tronWeb.transactionBuilder.createSmartContract({
+                abi: TestCustomError.abi,
+                bytecode: TestCustomError.bytecode
             }, accounts.b58[0]), accounts.pks[0]);
-            customError = await tronWeb.contract(testCustomError.abi, tx.transaction.contract_address);
+            customError = await tronWeb.contract(TestCustomError.abi, tx.transaction.contract_address);
         })
 
         it('should revert with custom error', async () => {
             const txid = await customError.test(111).send();
-            await wait(10);
+            console.log("txid: "+txid);
+            await wait(40);
             const data = await tronWeb.trx.getTransactionInfo(txid);
             const errorData = data.contractResult;
             const expectedErrorData =

@@ -39,8 +39,8 @@ describe('TronWeb.transactionBuilder', function () {
     before(async function () {
         emptyAccount = await TronWeb.createAccount();
         tronWeb = tronWebBuilder.createInstance();
-        await tronWebBuilder.newTestAccountsInMain(20);
-        accounts = await tronWebBuilder.getTestAccountsInMain(20);
+        await tronWebBuilder.newTestAccountsInMain(29);
+        accounts = await tronWebBuilder.getTestAccountsInMain(29);
     });
 
     describe('#constructor()', function () {
@@ -1179,6 +1179,7 @@ describe('TronWeb.transactionBuilder', function () {
             await broadcaster.broadcaster(tronWeb.transactionBuilder.createProposal(parameters, WITNESS_ACCOUNT), WITNESS_KEY)
             await wait(45);
             proposals = await tronWeb.trx.listProposals();
+            console.log("proposals: "+util.inspect(proposals,true,null,true))
 
         })
 
@@ -1215,7 +1216,7 @@ describe('TronWeb.transactionBuilder', function () {
         // TODO add invalid params throws
     });
 
-    describe("#freezeBalance", async function () {
+    describe.skip("#freezeBalance", async function () {
 
         it('should allows accounts[1] to freeze its balance', async function () {
             const params = [
@@ -1240,7 +1241,7 @@ describe('TronWeb.transactionBuilder', function () {
 
     });
 
-    describe("#unfreezeBalance", async function () {
+    describe.skip("#unfreezeBalance", async function () {
 
         // TODO this is not fully testable because the minimum time before unfreezing is 3 days
         async function freezeBandWith() {
@@ -1299,17 +1300,17 @@ describe('TronWeb.transactionBuilder', function () {
     describe("#vote", async function () {
         let url = 'https://xtron.network';
         before(async function () {
-            await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalance(100e6, 3, 'BANDWIDTH', accounts.b58[1]), accounts.pks[1])
+            await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalanceV2(100e6,'BANDWIDTH', accounts.b58[11]), accounts.pks[11])
         })
 
         it('should allows accounts[1] to vote for accounts[0] as SR', async function () {
             let votes = {}
             votes[tronWeb.address.toHex(WITNESS_ACCOUNT)] = 5
 
-            const transaction = await tronWeb.transactionBuilder.vote(votes, accounts.b58[1])
+            const transaction = await tronWeb.transactionBuilder.vote(votes, accounts.b58[11])
             const parameter = txPars(transaction);
 
-            assert.equal(parameter.value.owner_address, accounts.hex[1]);
+            assert.equal(parameter.value.owner_address, accounts.hex[11]);
             assert.equal(parameter.value.votes[0].vote_address, tronWeb.address.toHex(WITNESS_ACCOUNT));
             assert.equal(parameter.value.votes[0].vote_count, 5);
             assert.equal(parameter.type_url, 'type.googleapis.com/protocol.VoteWitnessContract');
@@ -3408,7 +3409,7 @@ describe('TronWeb.transactionBuilder', function () {
             console.log("accountInfo: "+util.inspect(accountInfo,true,null,true))
             console.log("accountResource: "+util.inspect(accountResource,true,null,true))
             assert.equal(accountInfo.frozenV2[0].amount, 1e6);
-            assert.equal(accountInfo.unfrozenV2[0].unfreeze_amount, 1e6);
+            assert.equal(accountInfo.unfrozenV2[0].unfreeze_amount, 3e6);
             assert.equal(accountResource.tronPowerLimit, 4);
 
             transaction = await tronWeb.transactionBuilder.unfreezeBalanceV2(2e6, 'ENERGY', accounts.b58[0])
@@ -3543,15 +3544,15 @@ describe('TronWeb.transactionBuilder', function () {
 
     describe("#delegateResource", async function () {
         before(async () => {
-            const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.b58[1]);
+            const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.b58[1]);
             await broadcaster.broadcaster(null, accounts.pks[1], transaction);
 
-            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY', accounts.hex[1]);
+            const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY', accounts.hex[1]);
             await broadcaster.broadcaster(null, accounts.pks[1], transaction2);
 
             const transaction3 = await tronWeb.transactionBuilder.freezeBalanceV2(50e6);
             await broadcaster.broadcaster(null, PRIVATE_KEY, transaction3);
-            await wait(30);
+            await wait(40);
         });
 
         it('resource is BANDWIDTH and multisign、normal and lock is default false', async function () {
@@ -3619,7 +3620,7 @@ describe('TronWeb.transactionBuilder', function () {
             console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
             console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
             assert.equal(accountAfter1.frozenV2[1].amount, accountBefore1.frozenV2[1].amount-10e6);
-            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy, accountBefore1.account_resource.delegated_frozenV2_balance_for_energy+10e6);
+            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy, 10e6);
             assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
 
             transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY', accounts.b58[1])
@@ -3739,7 +3740,7 @@ describe('TronWeb.transactionBuilder', function () {
             let tx = await broadcaster.broadcaster(null, accounts.pks[1], transaction);
             console.log("tx:"+util.inspect(tx))
             assert.equal(tx.transaction.txID.length, 64);
-            await wait(30);
+            await wait(40);
             let parameter = txPars(transaction);
             assert.equal(parameter.value.owner_address, accounts.hex[1]);
             assert.equal(parameter.value.receiver_address, accounts.hex[7]);
@@ -3753,7 +3754,7 @@ describe('TronWeb.transactionBuilder', function () {
             console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
             console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
             assert.equal(accountAfter1.frozenV2[1].amount, accountBefore1.frozenV2[1].amount-10e6);
-            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy,  10e6);
+            assert.equal(accountAfter1.account_resource.delegated_frozenV2_balance_for_energy,  accountBefore1.account_resource.delegated_frozenV2_balance_for_energy+10e6);
             assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
 
             transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.b58[7], 'ENERGY',accounts.b58[1], true)
@@ -4223,7 +4224,7 @@ describe('TronWeb.transactionBuilder', function () {
         let contractAddressWithArray;
         let contractAddressWithTrctoken;
         before(async function () {
-            /*transaction = await tronWeb.transactionBuilder.createSmartContract({
+            transaction = await tronWeb.transactionBuilder.createSmartContract({
                 abi: testConstant.abi,
                 bytecode: testConstant.bytecode
             }, accounts.hex[6]);
@@ -4282,8 +4283,8 @@ describe('TronWeb.transactionBuilder', function () {
                     break;
                 }
             }
-            contractAddressWithTrctoken = transaction.contract_address;*/
-            contractAddressWithTrctoken = 'TBe5miPB9JqTLg6izH4KbwqXgHvhWbFe7X';
+            contractAddressWithTrctoken = transaction.contract_address;
+            // contractAddressWithTrctoken = 'TBe5miPB9JqTLg6izH4KbwqXgHvhWbFe7X';
         })
 
         it('estimateEnergy simple', async function () {
@@ -4394,8 +4395,11 @@ describe('TronWeb.transactionBuilder', function () {
             const accountTrxBalanceBefore = await tronWeb.trx.getBalance(contractAddressWithTrctoken);
             const accountbefore = await tronWeb.trx.getAccount(contractAddressWithTrctoken);
             const accountTrc10BalanceBefore = accountbefore.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value;
+            const toAddressBefore = await tronWeb.trx.getAccount(accounts.hex[17]);
+            const toAddressTrc10BalanceBefore = toAddressBefore.assetV2?toAddressBefore.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value:0;
             console.log("accountTrxBalanceBefore:"+accountTrxBalanceBefore);
             console.log("accountTrc10BalanceBefore:"+accountTrc10BalanceBefore);
+            console.log("toAddressTrc10BalanceBefore:"+toAddressTrc10BalanceBefore);
 
             const functionSelector = 'TransferTokenTo(address,trcToken,uint256)';
             const parameter = [

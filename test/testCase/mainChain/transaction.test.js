@@ -397,17 +397,11 @@ describe('TronWeb.utils.transaction', function () {
         describe.skip('#case UnfreezeBalanceContract', function () {
             // this is not fully testable because the minimum time before unfreezing is 3 days
             async function freezeBandWith() {
-                const transaction = await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1]);
-                await broadcaster.broadcaster(transaction, accounts.pks[1]);
-                while (true) {
-                    const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
-                    if (Object.keys(tx).length === 0) {
-                        await wait(3);
-                        continue;
-                    } else {
-                        break;
-                    }
-                }
+                await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'ENERGY', accounts.b58[1]), accounts.pks[1]);
+                await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1]), accounts.pks[1]);
+                await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'ENERGY', accounts.b58[1],accounts.b58[2]), accounts.pks[1]);
+                await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1],accounts.b58[2]), accounts.pks[1]);
+                await wait(40);
             };
 
             it('it should return true', async function () {
@@ -419,8 +413,11 @@ describe('TronWeb.utils.transaction', function () {
                 ];
 
                 for (let param of params) {
+                    console.log("000")
                     await freezeBandWith();
+                    console.log("222")
                     const transaction = await tronWeb.transactionBuilder.unfreezeBalance(...param)
+                    console.log("333")
                     commonAssertFalsePb(transaction);
 
                     const cop8 = JSON.parse(JSON.stringify(transaction))

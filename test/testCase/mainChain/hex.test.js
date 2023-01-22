@@ -73,7 +73,7 @@ describe("#SignTransaction with visible", async function () {
 
         // broadcast transaction
         let signedTransaction = await tronWeb.trx.sign(
-            transaction1, priKey, false,false,false);
+            transaction1, PRIVATE_KEY, false,false,false);
         console.log("signedTransaction1: "+util.inspect(signedTransaction,true,null,true))
 
         let result = await tronWeb.trx.broadcast(signedTransaction);
@@ -81,7 +81,7 @@ describe("#SignTransaction with visible", async function () {
         console.log("result1: "+util.inspect(result,true,null,true))
 
         signedTransaction = await tronWeb.trx.sign(
-            transaction2, priKey, false,false,false);
+            transaction2, PRIVATE_KEY, false,false,false);
         console.log("signedTransaction2: "+util.inspect(signedTransaction,true,null,true))
 
         result = await tronWeb.trx.broadcast(signedTransaction);

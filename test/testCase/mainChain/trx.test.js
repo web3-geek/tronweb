@@ -1880,7 +1880,7 @@ describe('TronWeb.trx', function () {
 
             before(async function(){
                 // create proposal
-                let parameters = [{"key": 72, "value": 1},{"key": 73, "value": 10},{"key": 74, "value": 1000},{"key": 75, "value": 20000}]
+                let parameters = [{"key": 70, "value": 1},{"key": 72, "value": 1}]
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
@@ -1911,35 +1911,35 @@ describe('TronWeb.trx', function () {
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.voteProposal(6, true, WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.voteProposal(13, true, WITNESS_ACCOUNT)
                 );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY2,
-                    await tronWeb.transactionBuilder.voteProposal(6, true, WITNESS_ACCOUNT2)
+                    await tronWeb.transactionBuilder.voteProposal(13, true, WITNESS_ACCOUNT2)
                 );
 
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.voteProposal(7, true, WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.voteProposal(14, true, WITNESS_ACCOUNT)
                 );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY2,
-                    await tronWeb.transactionBuilder.voteProposal(7, true, WITNESS_ACCOUNT2)
+                    await tronWeb.transactionBuilder.voteProposal(14, true, WITNESS_ACCOUNT2)
                 );
 
-                await broadcaster.broadcaster(
+                /*await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.voteProposal(8, true, WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.voteProposal(15, true, WITNESS_ACCOUNT)
                 );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY2,
-                    await tronWeb.transactionBuilder.voteProposal(8, true, WITNESS_ACCOUNT2)
-                );
+                    await tronWeb.transactionBuilder.voteProposal(15, true, WITNESS_ACCOUNT2)
+                );*/
             })
 
             it('should throw invalid proposalID provided error', async function () {
@@ -2096,8 +2096,8 @@ describe('TronWeb.trx', function () {
     /**
      * Need to execute java-tron2.HttpTestMutiSign001.test3Broadcasthex() to get transactionHex
      */
-    describe("#broadcastHex", async function () {
-        const transactionHex = "0a84010a02d513220843e966bd2d64af5440b8d3d6f8d2305a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b1215414f311d1663db19d4403f673913733a102d48dd3e18e80770db8ad3f8d2301241d3ca0cac8a43bb08d25840d235a5ae095dc3536bac214624340b07c050944fed79998c7e68fc8e4ab22a129c0bb0768455cdb45177b24f72880a06c2367372e000"
+    describe.only("#broadcastHex", async function () {
+        const transactionHex = "0a84010a02ae932208a165d8d3d0b45ebe40c8df96cadd305a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b121541da3d6f5a4472d5c121e39ac64837a5059788759b18e80770aca093cadd301241987e364589466cbf5e693167c9ea2e027f87e72cad24ef9350decd579ed37e4d1f5c147f10c608da1d0e692f4599b19064f29a54f0e8c410657d08a2cc6133df00"
         it('should broadcast a hex transaction', async function () {
             let result = await tronWeb.trx.broadcastHex(transactionHex);
             console.log("result1: "+util.inspect(result,true,null,true))

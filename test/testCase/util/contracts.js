@@ -8825,13 +8825,13 @@ module.exports = {
     pragma solidity >=0.8.4 <0.9.0;
     contract TestCustomError {
         uint256 number;
-        error CustomError(bytes available, uint256 required);
+        error CustomError(uint256 available, uint256 required);
         constructor() {}
         function test(uint256 num) public {
             if((true ? 1 : 2) + (true ? 1 : 2) > 0)
                 revert CustomError({
-                available: "aaa",
-                required: num
+                available: num,
+                required: number
             });
             number = 1;
         }
