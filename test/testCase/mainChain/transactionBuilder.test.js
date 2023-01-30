@@ -1300,6 +1300,13 @@ describe('TronWeb.transactionBuilder', function () {
     describe("#vote", async function () {
         let url = 'https://xtron.network';
         before(async function () {
+            /**
+             * Execute this method when Proposition 70 is not enabled
+             */
+            // await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalance(100e6, 3, 'BANDWIDTH', accounts.b58[11]), accounts.pks[11])
+            /**
+             * Execute this method when Proposition 70 is enabled
+             */
             await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalanceV2(100e6,'BANDWIDTH', accounts.b58[11]), accounts.pks[11])
         })
 
@@ -3847,7 +3854,8 @@ describe('TronWeb.transactionBuilder', function () {
             console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
             console.log("accountResourceAfter1: "+util.inspect(accountResourceAfter1,true,null,true))
             assert.equal(accountAfter1.frozenV2[0].amount, accountBefore1.frozenV2[0].amount-10e6);
-            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore1.delegated_frozenV2_balance_for_bandwidth+10e6);
+            const accountBefore_delegated_frozenV2_balance_for_bandwidth = accountBefore1.delegated_frozenV2_balance_for_bandwidth?accountBefore1.delegated_frozenV2_balance_for_bandwidth:0;
+            assert.equal(accountAfter1.delegated_frozenV2_balance_for_bandwidth, accountBefore_delegated_frozenV2_balance_for_bandwidth+10e6);
             assert.equal(accountResourceAfter1.tronPowerLimit, accountResourceBefore1.tronPowerLimit);
         })
 
@@ -4284,7 +4292,7 @@ describe('TronWeb.transactionBuilder', function () {
                 }
             }
             contractAddressWithTrctoken = transaction.contract_address;
-            // contractAddressWithTrctoken = 'TBe5miPB9JqTLg6izH4KbwqXgHvhWbFe7X';
+            // contractAddressWithTrctoken = 'TNm3SMJsk15nqTn3TVaoBSg9JWQ3G2JzHr';
         })
 
         it('estimateEnergy simple', async function () {
@@ -4439,7 +4447,7 @@ describe('TronWeb.transactionBuilder', function () {
             console.log("toAddressTrc10BalanceAfter:"+toAddressTrc10BalanceAfter);
             assert.equal(accountTrxBalanceAfter,(accountTrxBalanceBefore+321));
             assert.equal(accountTrc10BalanceAfter,(accountTrc10BalanceBefore+1e3-123));
-            assert.equal(toAddressTrc10BalanceAfter,123);
+            assert.equal(toAddressTrc10BalanceAfter,toAddressTrc10BalanceBefore+123);
 
             const options1 = {
                 callValue:321,

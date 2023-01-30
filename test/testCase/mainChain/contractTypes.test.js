@@ -219,6 +219,7 @@ describe('TronWeb.transactionBuilder', function () {
                 [], issuerAddress);
             assert.isTrue(transaction.result.result &&
                 transaction.transaction.raw_data.contract[0].parameter.type_url === 'type.googleapis.com/protocol.TriggerSmartContract');
+            console.log("transaction.constant_result: "+util.inspect(transaction.constant_result,true,null,true))
             assert.equal(transaction.constant_result,"0000000000000000000000000000000000000000000000000000000000000001");
 
             //abiV2

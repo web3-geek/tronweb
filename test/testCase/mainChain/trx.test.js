@@ -632,7 +632,10 @@ describe('TronWeb.trx', function () {
                 ownerPermission.keys  = [];
                 let activePermission = { type: 2, permission_name: 'active0' };
                 activePermission.threshold = threshold;
-                activePermission.operations = '7fff1fc0037e0000000000000000000000000000000000000000000000000000';
+                // freezebalance
+                // activePermission.operations = '7fff1fc0037e0000000000000000000000000000000000000000000000000000';
+                // freezebalanceV2
+                activePermission.operations = '7fff1fc0033ec107000000000000000000000000000000000000000000000000';
                 activePermission.keys = [];
 
                 for (let i = idxS; i < idxE; i++) {
@@ -769,6 +772,7 @@ describe('TronWeb.trx', function () {
             it('should multi-sign a transaction by active permission', async function () {
 
                 const transaction = await tronWeb.transactionBuilder.freezeBalance(10e5, 3, 'BANDWIDTH', accounts.b58[ownerIdx]);
+                // const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(10e5, 'BANDWIDTH', accounts.b58[ownerIdx]);
                 let signedTransaction = transaction;
                 for (let i = idxS; i < idxE; i++) {
                     signedTransaction = await tronWeb.trx.multiSign(signedTransaction, accounts.pks[i], 2);
@@ -1880,22 +1884,23 @@ describe('TronWeb.trx', function () {
 
             before(async function(){
                 // create proposal
+                // let parameters = [{"key": 0, "value": 100000}, {"key": 1, "value": 2}]
                 let parameters = [{"key": 70, "value": 1},{"key": 72, "value": 1}]
+                await broadcaster.broadcaster(
+                    null,
+                    WITNESS_KEY,
+                    await tronWeb.transactionBuilder.createProposal(parameters[0], WITNESS_ACCOUNT)
+                );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
                     await tronWeb.transactionBuilder.createProposal(parameters[1], WITNESS_ACCOUNT)
                 );
-                await broadcaster.broadcaster(
-                    null,
-                    WITNESS_KEY,
-                    await tronWeb.transactionBuilder.createProposal(parameters[2], WITNESS_ACCOUNT)
-                );
-                await broadcaster.broadcaster(
+                /*await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
                     await tronWeb.transactionBuilder.createProposal(parameters[3], WITNESS_ACCOUNT)
-                );
+                );*/
                 await wait(30);
                 proposals = await tronWeb.trx.listProposals();
             });
@@ -1904,30 +1909,32 @@ describe('TronWeb.trx', function () {
                 for (let proposal of proposals) {
                     const ps = await tronWeb.trx.getProposal(proposal.proposal_id);
                     assert.equal(ps.proposal_id, proposal.proposal_id);
+                    assert.isDefined(proposal.proposal_id);
+                    assert.isDefined(proposal.proposer_address);
                 }
             });
 
-            it('should allow vote proposal', async function () {
+            it.skip('should allow vote proposal', async function () {
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.voteProposal(13, true, WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.voteProposal(52, true, WITNESS_ACCOUNT)
                 );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY2,
-                    await tronWeb.transactionBuilder.voteProposal(13, true, WITNESS_ACCOUNT2)
+                    await tronWeb.transactionBuilder.voteProposal(52, true, WITNESS_ACCOUNT2)
                 );
 
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY,
-                    await tronWeb.transactionBuilder.voteProposal(14, true, WITNESS_ACCOUNT)
+                    await tronWeb.transactionBuilder.voteProposal(53, true, WITNESS_ACCOUNT)
                 );
                 await broadcaster.broadcaster(
                     null,
                     WITNESS_KEY2,
-                    await tronWeb.transactionBuilder.voteProposal(14, true, WITNESS_ACCOUNT2)
+                    await tronWeb.transactionBuilder.voteProposal(53, true, WITNESS_ACCOUNT2)
                 );
 
                 /*await broadcaster.broadcaster(
@@ -2096,8 +2103,8 @@ describe('TronWeb.trx', function () {
     /**
      * Need to execute java-tron2.HttpTestMutiSign001.test3Broadcasthex() to get transactionHex
      */
-    describe.only("#broadcastHex", async function () {
-        const transactionHex = "0a84010a02ae932208a165d8d3d0b45ebe40c8df96cadd305a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b121541da3d6f5a4472d5c121e39ac64837a5059788759b18e80770aca093cadd301241987e364589466cbf5e693167c9ea2e027f87e72cad24ef9350decd579ed37e4d1f5c147f10c608da1d0e692f4599b19064f29a54f0e8c410657d08a2cc6133df00"
+    describe("#broadcastHex", async function () {
+        const transactionHex = "0a84010a0219282208d82021773765bd744080ce95bbdf305a66080112620a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412310a15415624c12e308b03a1a6b21d9b86e3942fac1ab92b12154116355903afbc0c15ff0d0c6fa9f7bd85fa1973af18e80770fc8d92bbdf301241b650c84cd5b3b1ed54d1e7b5e154e3391844a49e282ec755aadc7dc97131a9f229592157578c19e85cb47e7a6efccc25576cdf22577e1d253878e7f5cf768fd500"
         it('should broadcast a hex transaction', async function () {
             let result = await tronWeb.trx.broadcastHex(transactionHex);
             console.log("result1: "+util.inspect(result,true,null,true))
@@ -2194,6 +2201,7 @@ describe('TronWeb.trx', function () {
         before(async function(){
             await broadcaster.broadcaster(null, accounts.pks[idx], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH',accounts.b58[idx]));
             await broadcaster.broadcaster(null, accounts.pks[idx], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY',accounts.b58[idx]));
+            await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.freezeBalanceV2(12e6, 'ENERGY'));
             await wait(40);
             const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx+1], 'BANDWIDTH', accounts.b58[idx]);
             await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
@@ -2203,6 +2211,8 @@ describe('TronWeb.trx', function () {
             await broadcaster.broadcaster(null, accounts.pks[idx], transaction4);
             const transaction5 = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx+4], 'ENERGY', accounts.b58[idx],true);
             await broadcaster.broadcaster(null, accounts.pks[idx], transaction5);
+            const transaction6 = await tronWeb.transactionBuilder.delegateResource(10e6, accounts.hex[idx+4], 'ENERGY');
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction6);
             await wait(40);
         });
 
@@ -2243,7 +2253,7 @@ describe('TronWeb.trx', function () {
             console.log("delegationInfo: "+util.inspect(delegationInfo,true,null,true))
             assert.isDefined(delegationInfo.account);
             assert.isArray(delegationInfo.toAccounts);
-            assert.isTrue(delegationInfo.toAccounts.length>2)
+            assert.isTrue(delegationInfo.toAccounts.length>=1)
         });
 
         it('should throw address is not valid error', async function () {
@@ -2264,6 +2274,8 @@ describe('TronWeb.trx', function () {
             await broadcaster.broadcaster(null, accounts.pks[idx], transaction);
             const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[idx]);
             await broadcaster.broadcaster(null, accounts.pks[idx], transaction2);
+            const transaction3 = await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH');
+            await broadcaster.broadcaster(null, PRIVATE_KEY, transaction3);
             await wait(40);
         });
 

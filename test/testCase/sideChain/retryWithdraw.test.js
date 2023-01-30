@@ -130,8 +130,8 @@ describe('TronWeb Instance', function() {
             [{type: 'uint256', value: trc721Id}]);
         let sTrc721OwnerAfter = sTrc721OwnerResultAfter && sTrc721OwnerResultAfter.result ? sTrc721OwnerResultAfter.constant_result[0].toLocaleString().toLowerCase() : 0;
         sTrc721OwnerAfter = "41"+sTrc721OwnerAfter.substr(24);
-        assert.equal(mTrc721BalanceAfter,SIDE_CHAIN.sideOptions.mainGatewayAddress_hex)
-        assert.equal(sTrc721OwnerAfter,ADDRESS_HEX)
+        assert.equal(mTrc721BalanceAfter.toUpperCase(),SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase())
+        assert.equal(sTrc721OwnerAfter.toUpperCase(),ADDRESS_HEX.toUpperCase())
     });
     describe('#retryWithdraw', function () {
         it('retryWithdraw normal(mainOracle balance is zero)', async function () {
@@ -235,7 +235,7 @@ describe('TronWeb Instance', function() {
             // withdrawTrc721,will fail
             let mTrc721Contract = await tronWeb.sidechain.mainchain.contract().at(trc721ContractAddress);
             let mTrc721BalanceBefore = await mTrc721Contract.ownerOf(trc721Id).call()
-            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex, mTrc721BalanceBefore)
+            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase(), mTrc721BalanceBefore.toUpperCase())
             let sTrc721OwnerResultBefore=await tronWeb.sidechain.sidechain.transactionBuilder.triggerSmartContract(
                 sideChainTrc721ContractAddress,
                 'ownerOf(uint256)',
@@ -243,11 +243,11 @@ describe('TronWeb Instance', function() {
                 [{type: 'uint256', value: trc721Id}]);
             let sTrc721OwnerBefore = sTrc721OwnerResultBefore && sTrc721OwnerResultBefore.result ? sTrc721OwnerResultBefore.constant_result[0].toLocaleString().toLowerCase() : 0;
             sTrc721OwnerBefore = "41"+sTrc721OwnerBefore.substr(24);
-            assert.equal(sTrc721OwnerBefore,ADDRESS_HEX)
+            assert.equal(sTrc721OwnerBefore.toUpperCase(),ADDRESS_HEX.toUpperCase())
             let withdrawTrc721Map = await publicMethod.withdrawTrc721(trc721Id, sideChainTrc721ContractAddress);
             let withdrawTrc721Nonce = withdrawTrc721Map.get("withdrawNonce");
             let mTrc721BalanceAfter = await mTrc721Contract.ownerOf(trc721Id).call()
-            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex, mTrc721BalanceAfter)
+            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase(), mTrc721BalanceAfter.toUpperCase())
             await assertThrow(
                 tronWeb.sidechain.sidechain.transactionBuilder.triggerSmartContract(
                     sideChainTrc721ContractAddress,
@@ -355,7 +355,7 @@ describe('TronWeb Instance', function() {
             // withdrawTrc721,will success
             mTrc721Contract = await tronWeb.sidechain.mainchain.contract().at(trc721ContractAddress);
             mTrc721BalanceBefore = await mTrc721Contract.ownerOf(trc721Id).call()
-            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex, mTrc721BalanceBefore)
+            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase(), mTrc721BalanceBefore.toUpperCase())
             await assertThrow(
                 tronWeb.sidechain.sidechain.transactionBuilder.triggerSmartContract(
                     sideChainTrc721ContractAddress,
@@ -373,7 +373,7 @@ describe('TronWeb Instance', function() {
             assert.equal("SUCCESS", retryWithdrawTrc721Info.receipt.result);
             mTrc721Contract = await tronWeb.sidechain.mainchain.contract().at(trc721ContractAddress);
             mTrc721BalanceAfter = await mTrc721Contract.ownerOf(trc721Id).call()
-            assert.equal(ADDRESS_HEX, mTrc721BalanceAfter)
+            assert.equal(ADDRESS_HEX.toUpperCase(), mTrc721BalanceAfter.toUpperCase())
             await assertThrow(
                 tronWeb.sidechain.sidechain.transactionBuilder.triggerSmartContract(
                     sideChainTrc721ContractAddress,

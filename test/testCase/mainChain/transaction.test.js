@@ -125,7 +125,7 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
+                    if (param[2]) {
                         cop13.raw_data.contract[0].Permission_id = '1';
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
@@ -187,12 +187,12 @@ describe('TronWeb.utils.transaction', function () {
                     const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
                     assert.equal(authResult11, false);
 
-                    // const cop12 = JSON.parse(JSON.stringify(transaction))
-                    // cop12.raw_data.contract[0].parameter.type_url = cop12.raw_data.contract[0].parameter.type_url + '123';
-                    // const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
-                    // assert.equal(authResult12, true);
-                    // createTx = await broadcaster.broadcaster(null, accounts.pks[3], cop8)
-                    // console.log("createTx:" + util.inspect(createTx))
+                    const cop13 = JSON.parse(JSON.stringify(transaction))
+                    if (param[4]) {
+                        cop13.raw_data.contract[0].Permission_id = '1';
+                        const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
+                        assert.equal(authResult13, false);
+                    }
                 }
             });
         });
@@ -208,6 +208,7 @@ describe('TronWeb.utils.transaction', function () {
                 await broadcaster.broadcaster(tronWeb.transactionBuilder.createToken(tokenOptions, accounts.b58[2]), accounts.pks[2])
                 await wait(45);
                 let tokenList = await tronWeb.trx.getTokensIssuedByAddress(accounts.b58[2])
+                console.log("tokenList: "+util.inspect(tokenList,true,null,true))
                 if (isAllowSameTokenNameApproved) {
                     tokenID = tokenList[tokenOptions.name].id
                 } else {
@@ -248,6 +249,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop11.raw_data.contract[0].parameter.value.asset_name = cop11.raw_data.contract[0].parameter.value.asset_name + '1';
                     const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
                     assert.equal(authResult11, false);
+
+                    const cop13 = JSON.parse(JSON.stringify(transaction))
+                    if (param[4]) {
+                        cop13.raw_data.contract[0].Permission_id = '1';
+                        const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
+                        assert.equal(authResult13, false);
+                    }
                 }
             });
         });
@@ -340,6 +348,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop14.raw_data.fee_limit = 123890123;
                     const authResult14 = TronWeb.utils.transaction.txCheck(cop14);
                     assert.equal(authResult14, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction.transaction))
+                    if (i === 1) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -347,14 +362,16 @@ describe('TronWeb.utils.transaction', function () {
         describe.skip('#case FreezeBalanceContract', function () {
 
             it('it should return true', async function () {
-                const params = [
+                const params1 = [
                     [100e6, 3, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
-                    [100e6, 3, 'ENERGY', accounts.b58[1]],
+                    [100e6, 3, 'ENERGY', accounts.b58[1]]
+                ];
+                const params2 = [
                     [100e6, 3, 'ENERGY', accounts.b58[1], accounts.b58[2], { permissionId: 2 }],
                     [100e6, 3, 'BANDWIDTH', accounts.b58[1], accounts.b58[2],]
                 ];
 
-                for (let param of params) {
+                for (let param of params1) {
                     const transaction = await tronWeb.transactionBuilder.freezeBalance(...param);
                     commonAssertFalsePb(transaction);
 
@@ -374,21 +391,60 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].parameter.value.resource) {
-                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
-                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
-                        }
-                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
-                        assert.equal(authResult11, false);
+                    if (param[2] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[2] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
                     }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[4]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
+                }
+
+                for (let param of params2) {
+                    const transaction = await tronWeb.transactionBuilder.freezeBalance(...param);
+                    commonAssertFalsePb(transaction);
+
+                    const cop8 = JSON.parse(JSON.stringify(transaction))
+                    cop8.raw_data.contract[0].parameter.value.frozen_duration = '5';
+                    const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
+                    assert.equal(authResult8, false);
+
+                    const cop9 = JSON.parse(JSON.stringify(transaction))
+                    cop9.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
+                    assert.equal(authResult9, false);
+
+                    const cop10 = JSON.parse(JSON.stringify(transaction))
+                    cop10.raw_data.contract[0].parameter.value.frozen_balance = 1234;
+                    const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
+                    assert.equal(authResult10, false);
+
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (param[2] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[2] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
 
                     const cop12 = JSON.parse(JSON.stringify(transaction))
-                    if (cop12.raw_data.contract[0].parameter.value.receiver_address) {
-                        cop12.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
-                        const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
-                        assert.equal(authResult12, false);
+                    cop12.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
+                    assert.equal(authResult12, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[5]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
                     }
                 }
             })
@@ -396,28 +452,26 @@ describe('TronWeb.utils.transaction', function () {
 
         describe.skip('#case UnfreezeBalanceContract', function () {
             // this is not fully testable because the minimum time before unfreezing is 3 days
-            async function freezeBandWith() {
+            before(async function(){
                 await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'ENERGY', accounts.b58[1]), accounts.pks[1]);
                 await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1]), accounts.pks[1]);
                 await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'ENERGY', accounts.b58[1],accounts.b58[2]), accounts.pks[1]);
                 await broadcaster.broadcaster(await tronWeb.transactionBuilder.freezeBalance(100e6, 0, 'BANDWIDTH', accounts.b58[1],accounts.b58[2]), accounts.pks[1]);
                 await wait(40);
-            };
+            });
 
             it('it should return true', async function () {
-                const params = [
+                const params1 = [
                     ['ENERGY', accounts.b58[1], accounts.b58[2], { permissionId: 2 }],
-                    ['BANDWIDTH', accounts.b58[1], accounts.b58[2]],
+                    ['BANDWIDTH', accounts.b58[1], accounts.b58[2]]
+                ];
+                const params2 = [
                     ['BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
                     ['ENERGY', accounts.b58[1]]
                 ];
 
-                for (let param of params) {
-                    console.log("000")
-                    await freezeBandWith();
-                    console.log("222")
+                for (let param of params1) {
                     const transaction = await tronWeb.transactionBuilder.unfreezeBalance(...param)
-                    console.log("333")
                     commonAssertFalsePb(transaction);
 
                     const cop8 = JSON.parse(JSON.stringify(transaction))
@@ -426,21 +480,49 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult8, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].parameter.value.resource) {
-                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
-                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
-                        }
-                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
-                        assert.equal(authResult11, false);
+                    if (param[0] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[0] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
                     }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
 
                     const cop12 = JSON.parse(JSON.stringify(transaction))
-                    if (cop12.raw_data.contract[0].parameter.value.receiver_address) {
-                        cop12.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
-                        const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
-                        assert.equal(authResult12, false);
+                    cop12.raw_data.contract[0].parameter.value.receiver_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
+                    assert.equal(authResult12, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[3]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
+                }
+                for (let param of params2) {
+                    const transaction = await tronWeb.transactionBuilder.unfreezeBalance(...param)
+                    commonAssertFalsePb(transaction);
+
+                    const cop8 = JSON.parse(JSON.stringify(transaction))
+                    cop8.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
+                    assert.equal(authResult8, false);
+
+                    const cop11 = JSON.parse(JSON.stringify(transaction))
+                    if (param[0] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[0] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[2]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
                     }
                 }
             })
@@ -472,14 +554,19 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].parameter.value.resource) {
-                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
-                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
-                        }
-                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
-                        assert.equal(authResult11, false);
+                    if (param[1] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[1] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[3]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
                     }
                 }
             });
@@ -493,8 +580,8 @@ describe('TronWeb.utils.transaction', function () {
                     [10e6, 'ENERGY', accounts.b58[1]],
                     [10e6, 'BANDWIDTH', accounts.b58[1], { permissionId: 2 }],
                 ];
-                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e8, 'BANDWIDTH',accounts.b58[1]));
-                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(50e8, 'ENERGY',accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(20e6, 'BANDWIDTH',accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(20e6, 'ENERGY',accounts.b58[1]));
                 await wait(40);
             });
 
@@ -514,14 +601,19 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].parameter.value.resource) {
-                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
-                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
-                        }
-                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
-                        assert.equal(authResult11, false);
+                    if (param[1] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[1] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[3]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
                     }
                 }
             });
@@ -533,10 +625,10 @@ describe('TronWeb.utils.transaction', function () {
             before(async () => {
                 params = [
                     [10e6, accounts.b58[2], 'ENERGY', accounts.b58[1], false, { permissionId: 2 }],
-                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], false]
+                    [10e6, accounts.b58[2], 'BANDWIDTH', accounts.b58[1], true]
                 ];
-                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e8, 'BANDWIDTH', accounts.b58[1]));
-                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(10e8, 'ENERGY', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(20e6, 'BANDWIDTH', accounts.b58[1]));
+                await broadcaster.broadcaster(null, accounts.pks[1], await tronWeb.transactionBuilder.freezeBalanceV2(20e6, 'ENERGY', accounts.b58[1]));
                 await wait(3);
             });
 
@@ -561,25 +653,28 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].parameter.value.resource) {
-                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
-                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
-                        }
-                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
-                        assert.equal(authResult11, false);
+                    if (param[2] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[2] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
                     }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
 
                     const cop12 = JSON.parse(JSON.stringify(transaction))
-                    if (cop12.raw_data.contract[0].parameter.value.lock) {
-                        if (cop12.raw_data.contract[0].parameter.value.resource === true) {
-                            cop12.raw_data.contract[0].parameter.value.resource = false
-                        } else if (cop12.raw_data.contract[0].parameter.value.resource === false) {
-                            cop12.raw_data.contract[0].parameter.value.resource = true
-                        }
-                        const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
-                        assert.equal(authResult12, false);
+                    if (param[4] === true) {
+                        cop12.raw_data.contract[0].parameter.value.lock = false
+                    } else if (param[4] === false) {
+                        cop12.raw_data.contract[0].parameter.value.lock = true
+                    }
+                    const authResult12 = TronWeb.utils.transaction.txCheck(cop12);
+                    assert.equal(authResult12, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[5]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
                     }
                 }
             });
@@ -624,14 +719,19 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].parameter.value.resource) {
-                        if (cop11.raw_data.contract[0].parameter.value.resource === 'ENERGY') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
-                        } else if (cop11.raw_data.contract[0].parameter.value.resource === 'BANDWIDTH') {
-                            cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
-                        }
-                        const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
-                        assert.equal(authResult11, false);
+                    if (param[2] === 'ENERGY') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'BANDWIDTH'
+                    } else if (param[2] === 'BANDWIDTH') {
+                        cop11.raw_data.contract[0].parameter.value.resource = 'ENERGY'
+                    }
+                    const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
+                    assert.equal(authResult11, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[4]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
                     }
                 }
             });
@@ -657,6 +757,18 @@ describe('TronWeb.utils.transaction', function () {
                 for (const param of params) {
                     const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param);
                     commonAssertFalsePb(transaction);
+
+                    const cop9 = JSON.parse(JSON.stringify(transaction))
+                    cop9.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
+                    const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
+                    assert.equal(authResult9, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[1]) {
+                        cop18.raw_data.contract[0].Permission_id = 3;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -685,10 +797,6 @@ describe('TronWeb.utils.transaction', function () {
             });
 
             it(`it should return true`, async function () {
-                /*const params = [
-                    ['TEnSEdAhhjGxFaKp1B9Z8apreac4BWuvwA', { permissionId: 2 }],
-                    ['TEnSEdAhhjGxFaKp1B9Z8apreac4BWuvwA']
-                ];*/
                 const params = [
                     [WITNESS_ACCOUNT, { permissionId: 2 }],
                     [WITNESS_ACCOUNT]
@@ -703,6 +811,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop8.raw_data.contract[0].parameter.value.owner_address = '414f32099bbbce9bba471bc6004141ddf0656c68ef';
                     const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
                     assert.equal(authResult8, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[1]) {
+                        cop18.raw_data.contract[0].Permission_id = 3;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -733,6 +848,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop9.raw_data.contract[0].parameter.value.url = '68747470733a2f2f7874726f6e2e6e6574776f726b313233';
                     const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
                     assert.equal(authResult9, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[2]) {
+                        cop18.raw_data.contract[0].Permission_id = 3;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
 
@@ -784,6 +906,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop10.raw_data.contract[0].parameter.value.votes[0].vote_count = '6';
                     const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                     assert.equal(authResult10, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (Permission_id) {
+                        cop18.raw_data.contract[0].Permission_id = 3;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             })
         });
@@ -812,9 +941,8 @@ describe('TronWeb.utils.transaction', function () {
                     const authResult8 = TronWeb.utils.transaction.txCheck(cop8);
                     assert.equal(authResult8, false);
 
-                    // TODO
                     const cop9 = JSON.parse(JSON.stringify(transaction))
-                    cop9.visible = 'true';
+                    cop9.visible = true;
                     const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
                     assert.equal(authResult9, true);
 
@@ -875,6 +1003,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop20.raw_data.contract[0].parameter.value.new_contract.name = cop20.raw_data.contract[0].parameter.value.new_contract.name+'31';
                     const authResult20 = TronWeb.utils.transaction.txCheck(cop20);
                     assert.equal(authResult20, false);
+
+                    const cop21 = JSON.parse(JSON.stringify(transaction))
+                    if (i === 1) {
+                        cop21.raw_data.contract[0].Permission_id = 3;
+                        const authResult21 = TronWeb.utils.transaction.txCheck(cop21);
+                        assert.equal(authResult21, false);
+                    }
                 }
             });
         });
@@ -884,8 +1019,6 @@ describe('TronWeb.utils.transaction', function () {
             let transaction;
             let contract;
             before(async function () {
-                this.timeout(20000);
-
                 transaction = await tronWeb.transactionBuilder.createSmartContract({
                     abi: testConstant.abi,
                     bytecode: testConstant.bytecode
@@ -1033,7 +1166,7 @@ describe('TronWeb.utils.transaction', function () {
 
                     if (i === 1) {
                         const cop22 = JSON.parse(JSON.stringify(transaction))
-                        cop22.raw_data.contract[0].Permission_id = '3';
+                        cop22.raw_data.contract[0].Permission_id = 4;
                         const authResult22 = TronWeb.utils.transaction.txCheck(cop22);
                         assert.equal(authResult22, false);
                     }
@@ -1046,9 +1179,6 @@ describe('TronWeb.utils.transaction', function () {
             let tokenID
 
             before(async function () {
-
-                this.timeout(10000)
-
                 tokenOptions = getTokenOptions();
                 await broadcaster.broadcaster(tronWeb.transactionBuilder.createToken(tokenOptions, accounts.b58[4]), accounts.pks[4])
 
@@ -1097,7 +1227,7 @@ describe('TronWeb.utils.transaction', function () {
 
                     if (i === 1) {
                         const cop13 = JSON.parse(JSON.stringify(transaction))
-                        cop13.raw_data.contract[0].Permission_id = '0';
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1128,8 +1258,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult9, false);
 
                     const cop10 = JSON.parse(JSON.stringify(transaction))
-                    if (cop10.raw_data.contract[0].Permission_id) {
-                        cop10.raw_data.contract[0].Permission_id = '1';
+                    if (param[2]) {
+                        cop10.raw_data.contract[0].Permission_id = 3;
                         const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                         assert.equal(authResult10, false);
                     }
@@ -1160,8 +1290,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult9, false);
 
                     const cop10 = JSON.parse(JSON.stringify(transaction))
-                    if (cop10.raw_data.contract[0].Permission_id) {
-                        cop10.raw_data.contract[0].Permission_id = '4';
+                    if (param[2]) {
+                        cop10.raw_data.contract[0].Permission_id = 4;
                         const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                         assert.equal(authResult10, false);
                     }
@@ -1175,11 +1305,12 @@ describe('TronWeb.utils.transaction', function () {
                 for (let i = 0; i < 2; i++) {
                     let accountId = TronWeb.toHex('abcabc110');
                     let param = [accountId, accounts.b58[3]]
-                    if (i === 1) {
-                        accountId = TronWeb.toHex('testtest');
+                    // TODO
+                    /*if (i === 1) {
+                        accountId = TronWeb.toHex('testtest11323');
                         param = [accountId, accounts.b58[3], { permissionId: 2 }]
-                    }
-                    const transaction = await tronWeb.transactionBuilder.setAccountId(param[0]);
+                    }*/
+                    const transaction = await tronWeb.transactionBuilder.setAccountId(...param);
                     commonAssertFalsePb(transaction);
 
                     const cop8 = JSON.parse(JSON.stringify(transaction))
@@ -1191,13 +1322,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop9.raw_data.contract[0].parameter.value.owner_address = '41ecaf9d37c4cbbf65f588ba04f77c08bde46fa2ed';
                     const authResult9 = TronWeb.utils.transaction.txCheck(cop9);
                     assert.equal(authResult9, false);
-
+/*
                     if (i === 1) {
                         const cop10 = JSON.parse(JSON.stringify(transaction))
-                        cop10.raw_data.contract[0].Permission_id = '0';
+                        cop10.raw_data.contract[0].Permission_id = 0;
                         const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                         assert.equal(authResult10, false);
-                    }
+                    }*/
                 }
             });
         });
@@ -1230,8 +1361,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop11 = JSON.parse(JSON.stringify(transaction))
-                    if (cop11.raw_data.contract[0].Permission_id) {
-                        cop11.raw_data.contract[0].Permission_id = '1';
+                    if (input[2]) {
+                        cop11.raw_data.contract[0].Permission_id = 1;
                         const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
                         assert.equal(authResult11, false);
                     }
@@ -1251,7 +1382,6 @@ describe('TronWeb.utils.transaction', function () {
             })
 
             it('should allow the SR to delete its own proposal', async function () {
-
                 const params = [
                     [proposals[0].proposal_id, WITNESS_ACCOUNT, { permissionId: 2 }],
                     [proposals[0].proposal_id, WITNESS_ACCOUNT]
@@ -1271,8 +1401,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult9, false);
 
                     const cop10 = JSON.parse(JSON.stringify(transaction))
-                    if (cop10.raw_data.contract[0].Permission_id) {
-                        cop10.raw_data.contract[0].Permission_id = '1';
+                    if (param[2]) {
+                        cop10.raw_data.contract[0].Permission_id = 1;
                         const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                         assert.equal(authResult10, false);
                     }
@@ -1315,6 +1445,13 @@ describe('TronWeb.utils.transaction', function () {
                     console.log("cop10:"+util.inspect(cop10,true,null,true))
                     const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                     assert.equal(authResult10, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[3]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             })
 
@@ -1343,6 +1480,13 @@ describe('TronWeb.utils.transaction', function () {
                     cop10.raw_data.contract[0].parameter.value.is_add_approval = true;
                     const authResult10 = TronWeb.utils.transaction.txCheck(cop10);
                     assert.equal(authResult10, false);
+
+                    const cop18 = JSON.parse(JSON.stringify(transaction))
+                    if (param[3]) {
+                        cop18.raw_data.contract[0].Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheck(cop18);
+                        assert.equal(authResult18, false);
+                    }
                 }
             })
         });
@@ -1355,8 +1499,6 @@ describe('TronWeb.utils.transaction', function () {
             let tokenNames = [];
 
             before(async function () {
-                this.timeout(20000);
-
                 // create token
                 for (let i = idxS; i < idxE; i++) {
                     const options = getTokenOptions();
@@ -1419,8 +1561,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult12, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[5]) {
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1485,8 +1627,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult12, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[4]) {
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1558,8 +1700,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult11, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[3]) {
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1635,8 +1777,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult11, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[3]) {
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1712,8 +1854,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult12, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[4]) {
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1764,8 +1906,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[3]) {
+                        cop13.raw_data.contract[0].Permission_id = 3;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1776,8 +1918,6 @@ describe('TronWeb.utils.transaction', function () {
         describe("#case UpdateEnergyLimitContract", function () {
             let transaction;
             before(async function () {
-                this.timeout(20000);
-
                 transaction = await tronWeb.transactionBuilder.createSmartContract({
                     abi: testConstant.abi,
                     bytecode: testConstant.bytecode
@@ -1818,8 +1958,8 @@ describe('TronWeb.utils.transaction', function () {
                     assert.equal(authResult10, false);
 
                     const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
+                    if (param[3]) {
+                        cop13.raw_data.contract[0].Permission_id = 1;
                         const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
                         assert.equal(authResult13, false);
                     }
@@ -1947,13 +2087,6 @@ describe('TronWeb.utils.transaction', function () {
                     ];
                     const authResult11 = TronWeb.utils.transaction.txCheck(cop11);
                     assert.equal(authResult11, false);
-
-                    const cop13 = JSON.parse(JSON.stringify(transaction))
-                    if (cop13.raw_data.contract[0].Permission_id) {
-                        cop13.raw_data.contract[0].Permission_id = '1';
-                        const authResult13 = TronWeb.utils.transaction.txCheck(cop13);
-                        assert.equal(authResult13, false);
-                    }
                 }
             });
         });
@@ -2058,6 +2191,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop10.to_address = '415624c12e308b03a1a6b21d9b86e3942fac1ab92b';
                     const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[3] || {});
                     assert.equal(authResult10, false);
+
+                    if (param[2]) {
+                        const dataCop13 = JSON.parse(JSON.stringify(data))
+                        dataCop13.Permission_id = 1;
+                        const authResult13 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop13, param[3] || {});
+                        assert.equal(authResult13, false);
+                    }
                 }
             });
         });
@@ -2125,6 +2265,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop11.asset_name = dataCop11.asset_name+"31";
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[4]) {
+                        const dataCop13 = JSON.parse(JSON.stringify(data))
+                        dataCop13.Permission_id = 1;
+                        const authResult13 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop13, param[5] || {});
+                        assert.equal(authResult13, false);
+                    }
                 }
             });
         });
@@ -2191,6 +2338,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop11.asset_name = dataCop11.asset_name+"31";
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[4]) {
+                        const dataCop13 = JSON.parse(JSON.stringify(data))
+                        dataCop13.Permission_id = 1;
+                        const authResult13 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop13, param[3] || {});
+                        assert.equal(authResult13, false);
+                    }
                 }
             });
         });
@@ -2337,6 +2491,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop15.token_id = 12345678;
                     const authResult15 = TronWeb.utils.transaction.txCheckWithArgs(transaction.transaction, dataCop15, param[3] || {});
                     assert.equal(authResult15, false);
+
+                    if (param[2].permissionId) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction.transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2404,6 +2565,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[4] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[4]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
 
@@ -2443,6 +2611,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult12 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop12, param[5] || {});
                     assert.equal(authResult12, false);
+
+                    if (param[5]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2496,6 +2671,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[2] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[2]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             })
 
@@ -2536,6 +2718,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult12 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop12, param[3] || {});
                     assert.equal(authResult12, false);
+
+                    if (param[3]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             })
         });
@@ -2554,8 +2743,8 @@ describe('TronWeb.utils.transaction', function () {
 
             before(async () => {
                 params.push(...[
-                    [10e7, 'ENERGY', accounts.b58[1], { permissionId: 2 }],
-                    [10e7, 'BANDWIDTH', accounts.b58[1]]
+                    [10e6, 'ENERGY', accounts.b58[1], { permissionId: 2 }],
+                    [10e6, 'BANDWIDTH', accounts.b58[1]]
                 ]);
             });
 
@@ -2583,6 +2772,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[3]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2590,11 +2786,11 @@ describe('TronWeb.utils.transaction', function () {
         describe('#case UnfreezeBalanceV2Contract', function () {
             const params = [];
             before(async () => {
-                const transaction1 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'BANDWIDTH', accounts.b58[1]);
+                const transaction1 = await tronWeb.transactionBuilder.freezeBalanceV2(20e6, 'BANDWIDTH', accounts.b58[1]);
                 await broadcaster.broadcaster(transaction1, accounts.pks[1]);
                 await waitChainData('tx', transaction1.txID);
 
-                const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(100e6, 'ENERGY', accounts.b58[2]);
+                const transaction2 = await tronWeb.transactionBuilder.freezeBalanceV2(20e6, 'ENERGY', accounts.b58[2]);
                 await broadcaster.broadcaster(transaction2, accounts.pks[2]);
                 await waitChainData('tx', transaction2.txID);
             });
@@ -2633,6 +2829,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[3] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[3]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2701,6 +2904,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult12 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop12, param[5] || {});
                     assert.equal(authResult12, false);
+
+                    if (param[5]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2762,6 +2972,13 @@ describe('TronWeb.utils.transaction', function () {
                     }
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, param[4] || {});
                     assert.equal(authResult11, false);
+
+                    if (param[4]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2793,20 +3010,19 @@ describe('TronWeb.utils.transaction', function () {
                 for (const param of params) {
                     const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param);
                     const data = generateData(param);
-                    const authResult =
-                        TronWeb.utils.transaction.txCheckWithArgs(transaction, data);
-                    assert.equal(authResult, true);
-                    commonAssertPbWithArgs(transaction, data);
-                }
-                for (const param of params) {
-                    const transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param);
-                    const data = generateData(param);
                     commonAssertFalsePbWithArgs(transaction,data,param);
 
                     const dataCop8 = JSON.parse(JSON.stringify(data))
                     dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
                     const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[1] || {});
                     assert.equal(authResult8, false);
+
+                    if (param[1]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2850,6 +3066,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop8.owner_address = '41dbcbb15421a82413789af066dd6fde5d60ab6daa';
                     const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, param[3] || {});
                     assert.equal(authResult8, false);
+
+                    if (param[1]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2890,6 +3113,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop9.url = tronWeb.fromUtf8('https://xtron.network123');
                     const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, param[3] || {});
                     assert.equal(authResult9, false);
+
+                    if (param[2]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -2953,6 +3183,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop10.votes[0].vote_count = 6;
                     const authResult10 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop10, param[3] || {});
                     assert.equal(authResult10, false);
+
+                    if (param[2]) {
+                        const dataCop16 = JSON.parse(JSON.stringify(data))
+                        dataCop16.Permission_id = 1;
+                        const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, param[3] || {});
+                        assert.equal(authResult16, false);
+                    }
                 }
             });
         });
@@ -3064,6 +3301,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop17.parameter = '000000000000000000000000948c275c39cc79422a638cb5732da3abd4f9b41c00000000000000000000000000000000000000000000000000000000000f42410000000000000000000000000000000000000000000000000000000000000010';
                     const authResult17 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop17, {});
                     assert.equal(authResult17, false);
+
+                    if (i === 1) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3234,25 +3478,32 @@ describe('TronWeb.utils.transaction', function () {
                     let authResult13 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop13, {});
                     assert.equal(authResult13, false);
 
-                    const cop14 = JSON.parse(JSON.stringify(transaction))
-                    cop14.end_time = 1670133743167;
-                    const authResult14 = TronWeb.utils.transaction.txCheckWithArgs(cop14, data, {});
-                    assert.equal(authResult14, true);
+                    const dataCop14 = JSON.parse(JSON.stringify(data))
+                    dataCop14.end_time = 1670133743167;
+                    const authResult14 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop14, {});
+                    assert.equal(authResult14, false);
 
-                    const cop15 = JSON.parse(JSON.stringify(transaction))
-                    cop15.free_asset_net_limit = 123;
-                    const authResult15 = TronWeb.utils.transaction.txCheckWithArgs(cop15, data, {});
-                    assert.equal(authResult15, true);
+                    const dataCop15 = JSON.parse(JSON.stringify(data))
+                    dataCop15.free_asset_net_limit = 123;
+                    const authResult15 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop15, {});
+                    assert.equal(authResult15, false);
 
-                    const cop16 = JSON.parse(JSON.stringify(transaction))
-                    cop16.public_free_asset_net_limit = 1234;
-                    const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(cop16, data, {});
-                    assert.equal(authResult16, true);
+                    const dataCop16 = JSON.parse(JSON.stringify(data))
+                    dataCop16.public_free_asset_net_limit = 1234;
+                    const authResult16 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop16, {});
+                    assert.equal(authResult16, false);
 
-                    const cop17 = JSON.parse(JSON.stringify(transaction))
-                    cop17.frozen_supply = { frozen_amount: 7, frozen_days: 2 };
-                    const authResult17 = TronWeb.utils.transaction.txCheckWithArgs(cop17, data, {});
-                    assert.equal(authResult17, true);
+                    const dataCop17 = JSON.parse(JSON.stringify(data))
+                    dataCop17.frozen_supply = { frozen_amount: 7, frozen_days: 2 };
+                    const authResult17 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop17, {});
+                    assert.equal(authResult17, false);
+
+                    if (i === 1) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3262,8 +3513,6 @@ describe('TronWeb.utils.transaction', function () {
             let tokenID
 
             before(async function () {
-                this.timeout(10000)
-
                 tokenOptions = getTokenOptions();
                 await broadcaster.broadcaster(tronWeb.transactionBuilder.createToken(tokenOptions, accounts.b58[14]), accounts.pks[14])
 
@@ -3319,6 +3568,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop11.new_limit = 66;
                     const authResult11 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop11, {});
                     assert.equal(authResult11, false);
+
+                    if (i === 1) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3353,6 +3609,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop6.account_address = '4171cd59226b590a2bf3d10d9bee9621e53226b288';
                     const authResult6 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop6, param[3] || {});
                     assert.equal(authResult6, false);
+
+                    if (param[2]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3387,17 +3650,27 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop6.account_name = dataCop6.account_name+'31';
                     const authResult6 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop6, param[3] || {});
                     assert.equal(authResult6, false);
+
+                    if (param[2]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
 
         describe("#case SetAccountIdContract", function () {
             it(`should set account id accounts[3]`, async function () {
-                const ids = ['abcabc110', 'testtest', 'jackieshen110'];
-
-                for (let id of ids) {
-                    let accountId = TronWeb.toHex(id);
-                    const transaction = await tronWeb.transactionBuilder.setAccountId(accountId, accounts.b58[3]);
+                for (let i = 0; i < 2; i++) {
+                    let accountId = TronWeb.toHex('abcabc110');
+                    let param = [accountId, accounts.b58[3]]
+                    // TODO
+                    /*if (i === 1) {
+                        param = [accountId, accounts.b58[3], { permissionId: 2 }]
+                    }*/
+                    const transaction = await tronWeb.transactionBuilder.setAccountId(...param);
                     const data = {
                         account_id: accountId,
                         owner_address: accounts.hex[3],
@@ -3413,6 +3686,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop6.account_id = TronWeb.toHex('12947971423974');
                     const authResult6 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop6, {});
                     assert.equal(authResult6, false);
+/*
+                    if (i === 1) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }*/
                 }
             });
         });
@@ -3454,6 +3734,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop6.parameters[0] = { "key": 5, "value": 12323423 };
                     const authResult6 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop6, {});
                     assert.equal(authResult6, false);
+
+                    if (input[2]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3501,6 +3788,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop6.proposal_id = 27394792437;
                     const authResult6 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop6, {});
                     assert.equal(authResult6, false);
+
+                    if (param[2]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3549,6 +3843,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop7.is_add_approval = false;
                     const authResult7 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop7, {});
                     assert.equal(authResult7, false);
+
+                    if (param[3]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
 
@@ -3577,6 +3878,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop7.is_add_approval = true;
                     const authResult7 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop7, {});
                     assert.equal(authResult7, false);
+
+                    if (param[3]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3656,6 +3964,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop9.second_token_balance = 8023407;
                     const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, {});
                     assert.equal(authResult9, false);
+
+                    if (param[5]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3723,6 +4038,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop9.second_token_balance = 8023407;
                     const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, {});
                     assert.equal(authResult9, false);
+
+                    if (param[4]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3802,6 +4124,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop8.quant = 1234;
                     const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, {});
                     assert.equal(authResult8, false);
+
+                    if (param[3]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3880,6 +4209,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop8.quant = 1234;
                     const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, {});
                     assert.equal(authResult8, false);
+
+                    if (param[3]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -3964,6 +4300,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop9.expected = 7;
                     const authResult9 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop9, {});
                     assert.equal(authResult9, false);
+
+                    if (param[4]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -4016,6 +4359,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop7.consume_user_resource_percent = 66;
                     const authResult7 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop7, {});
                     assert.equal(authResult7, false);
+
+                    if (param[3]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -4069,6 +4419,13 @@ describe('TronWeb.utils.transaction', function () {
                     dataCop7.origin_energy_limit = 6666;
                     const authResult7 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop7, {});
                     assert.equal(authResult7, false);
+
+                    if (param[3]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -4192,6 +4549,13 @@ describe('TronWeb.utils.transaction', function () {
                     ];
                     const authResult8 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop8, {});
                     assert.equal(authResult8, false);
+
+                    if (param[4]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });
@@ -4224,6 +4588,13 @@ describe('TronWeb.utils.transaction', function () {
                         TronWeb.utils.transaction.txCheckWithArgs(transaction, args, options);
                     assert.equal(authResult, true);
                     commonAssertPbWithArgs(transaction, args, options);
+
+                    if (i === 1) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, data[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
             it('should include data and auth true', async function () {
@@ -4261,6 +4632,13 @@ describe('TronWeb.utils.transaction', function () {
                             data: tronWeb.toHex('112'),
                         });
                     assert.equal(authResult2, false);
+
+                    if (param[2]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
             it('should include expiration and auth true', async function () {
@@ -4291,6 +4669,13 @@ describe('TronWeb.utils.transaction', function () {
                         TronWeb.utils.transaction.txCheckWithArgs(transaction2, data, options);
                     assert.equal(authResult, true);
                     commonAssertPbWithArgs(transaction2, data, options);
+
+                    if (param[2]) {
+                        const dataCop18 = JSON.parse(JSON.stringify(data))
+                        dataCop18.Permission_id = 1;
+                        const authResult18 = TronWeb.utils.transaction.txCheckWithArgs(transaction, dataCop18, param[3] || {});
+                        assert.equal(authResult18, false);
+                    }
                 }
             });
         });

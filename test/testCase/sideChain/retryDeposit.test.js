@@ -268,7 +268,7 @@ describe('TronWeb Instance', function() {
             // depositTrc721,will success
             mTrc721Contract = await tronWeb.sidechain.mainchain.contract().at(trc721ContractAddress);
             mTrc721BalanceBefore = await mTrc721Contract.ownerOf(trc721Id).call()
-            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex, mTrc721BalanceBefore)
+            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase(), mTrc721BalanceBefore.toUpperCase())
             await assertThrow(
                 tronWeb.sidechain.sidechain.transactionBuilder.triggerSmartContract(
                     sideChainTrc721ContractAddress,
@@ -293,7 +293,7 @@ describe('TronWeb Instance', function() {
                 [{type: 'uint256', value: trc721Id}]);
             let sTrc721OwnerAfter = sTrc721OwnerResultAfter && sTrc721OwnerResultAfter.result ? sTrc721OwnerResultAfter.constant_result[0].toLocaleString().toLowerCase() : 0;
             sTrc721OwnerAfter = "41"+sTrc721OwnerAfter.substr(24);
-            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex, mTrc721BalanceAfter)
+            assert.equal(SIDE_CHAIN.sideOptions.mainGatewayAddress_hex.toUpperCase(), mTrc721BalanceAfter.toUpperCase())
             assert.equal(sTrc721OwnerAfter,ADDRESS_HEX)
 
         });
