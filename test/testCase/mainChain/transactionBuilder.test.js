@@ -1993,8 +1993,6 @@ describe('TronWeb.transactionBuilder', function () {
         let exchangeId = '';
 
         before(async function () {
-            this.timeout(20000);
-
             // create token
             for (let i = idxS; i < idxE; i++) {
                 const options = getTokenOptions();

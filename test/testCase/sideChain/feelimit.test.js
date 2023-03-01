@@ -15,6 +15,7 @@ describe('TronWeb feelimit test', function() {
             const accountBalanceBefore = await tronWeb.trx.getBalance(ADDRESS_BASE58);
             console.log('accountBalanceBefore: ' + accountBalanceBefore);
             await tronWeb.trx.freezeBalance(10e6, 3, 'BANDWIDTH', {}, ADDRESS_BASE58)
+            // await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.freezeBalanceV2(10e6, 'BANDWIDTH',ADDRESS_BASE58));
             await wait(9);
             let accountBalanceAfter = await tronWeb.trx.getBalance(ADDRESS_BASE58);
             while (accountBalanceAfter!=(accountBalanceBefore-10e6)) {

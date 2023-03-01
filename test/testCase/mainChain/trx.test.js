@@ -623,7 +623,6 @@ describe('TronWeb.trx', function () {
             const threshold = 3;
 
             before(async function() {
-                this.timeout(10000);
                 // update account permission
                 let ownerAddress = accounts.hex[ownerIdx];
                 let ownerPk = accounts.pks[ownerIdx];
@@ -1736,7 +1735,7 @@ describe('TronWeb.trx', function () {
                     await broadcaster.broadcaster(null, accounts.pks[i], transaction);
                     await waitChainData('token', accounts.hex[i]);
                     const token = await tronWeb.trx.getTokensIssuedByAddress(accounts.hex[i]);
-                    await waitChainData('tokenById', token[Object.keys(token)[0]]['id']);
+                    await wait(35);
                     await broadcaster.broadcaster(null, accounts.pks[i], await tronWeb.transactionBuilder.sendToken(
                         accounts.hex[toIdx],
                         10e4,
