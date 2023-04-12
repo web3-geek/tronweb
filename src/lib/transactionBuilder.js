@@ -20,6 +20,10 @@ function fromUtf8(value) {
     return self.tronWeb.fromUtf8(value).replace(/^0x/, '');
 }
 
+function deepCopyJson(json) {
+    return JSON.parse(JSON.stringify(json));
+}
+
 function resultManagerTriggerSmartContract(transaction, data, options, callback) {
     if (transaction.Error)
         return callback(transaction.Error);
@@ -56,31 +60,31 @@ function getHeaderInfo(node) {
         });
 }
 
-function createTransaction(tronWeb, type, value, Permission_id, options = {}) {
-    return getHeaderInfo(tronWeb.fullNode)
-        .then((metaData) => {
-            const tx = {
-                visible: false,
-                txID: '',
-                raw_data_hex: '',
-                raw_data: {
-                    contract: [{
-                        parameter: {
-                            value,
-                            type_url: `type.googleapis.com/protocol.${type}`,
-                        },
-                        Permission_id,
-                        type,
-                    }],
-                    ...metaData,
-                    ...options,
+async function createTransaction(tronWeb, type, value, Permission_id, options = {}) {
+    const metaData = await getHeaderInfo(tronWeb.fullNode);
+    const tx = {
+        visible: false,
+        txID: '',
+        raw_data_hex: '',
+        raw_data: {
+            contract: [{
+                parameter: {
+                    value,
+                    type_url: `type.googleapis.com/protocol.${type}`,
                 },
-            };
-            const pb = txJsonToPb(tx);
-            tx.txID = txPbToTxID(pb).replace(/^0x/, '');
-            tx.raw_data_hex = txPbToRawDataHex(pb);
-            return tx;
-        });
+                type,
+            }],
+            ...metaData,
+            ...options,
+        },
+    };
+    if (Permission_id) {
+        tx.raw_data.contract[0].Permission_id = Permission_id;
+    }
+    const pb = txJsonToPb(tx);
+    tx.txID = txPbToTxID(pb).replace(/^0x/, '');
+    tx.raw_data_hex = txPbToRawDataHex(pb).toLowerCase();
+    return tx;
 }
 
 export default class TransactionBuilder {
@@ -340,7 +344,9 @@ export default class TransactionBuilder {
             owner_address: toHex(address),
             frozen_balance: parseInt(amount),
             frozen_duration: parseInt(duration),
-            resource: resource
+        };
+        if (resource !== 'BANDWIDTH') {
+            data.resource = resource;
         }
 
         if (utils.isNotNullOrUndefined(receiverAddress) && toHex(receiverAddress) !== toHex(address)) {
@@ -405,7 +411,9 @@ export default class TransactionBuilder {
 
         const data = {
             owner_address: toHex(address),
-            resource: resource
+        };
+        if (resource !== 'BANDWIDTH') {
+            data.resource = resource;
         }
 
         if (utils.isNotNullOrUndefined(receiverAddress) && toHex(receiverAddress) !== toHex(address)) {
@@ -466,7 +474,9 @@ export default class TransactionBuilder {
         const data = {
             owner_address: toHex(address),
             frozen_balance: parseInt(amount),
-            resource: resource
+        };
+        if (resource !== 'BANDWIDTH') {
+            data.resource = resource;
         }
 
         createTransaction(this.tronWeb, 'FreezeBalanceV2Contract', data, options?.permissionId)
@@ -523,7 +533,9 @@ export default class TransactionBuilder {
         const data = {
             owner_address: toHex(address),
             unfreeze_balance: parseInt(amount),
-            resource: resource
+        };
+        if (resource !== 'BANDWIDTH') {
+            data.resource = resource;
         }
 
         createTransaction(this.tronWeb, 'UnfreezeBalanceV2Contract', data, options?.permissionId)
@@ -603,8 +615,12 @@ export default class TransactionBuilder {
             owner_address: toHex(address),
             receiver_address: toHex(receiverAddress),
             balance: parseInt(amount),
-            resource: resource,
-            lock
+        };
+        if (resource !== 'BANDWIDTH') {
+            data.resource = resource;
+        }
+        if (lock) {
+            data.lock = lock;
         }
 
         createTransaction(this.tronWeb, 'DelegateResourceContract', data, options?.permissionId)
@@ -666,12 +682,14 @@ export default class TransactionBuilder {
         if(toHex(receiverAddress) === toHex(address)) {
             return callback('Receiver address must not be the same as owner address');
         }
-
+    
         const data = {
             owner_address: toHex(address),
             receiver_address: toHex(receiverAddress),
             balance: parseInt(amount),
-            resource: resource
+        };
+        if (resource !== 'BANDWIDTH') {
+            data.resource = resource;
         }
 
         createTransaction(this.tronWeb, 'UnDelegateResourceContract', data, options?.permissionId)
@@ -1282,22 +1300,30 @@ export default class TransactionBuilder {
             if (args.function_selector) {
                 args.data = keccak256(Buffer.from(args.function_selector, 'utf-8')).toString().substring(2, 10) + args.parameter;
             }
-            createTransaction(this.tronWeb, 'TriggerSmartContract', args, options.permissionId, {
-                fee_limit: parseInt(feeLimit),
-            })
-                .then(transaction => {
-                    callback(null, {
-                        result: {
-                            result: true,
-                        },
-                        transaction,
-                    })
+            createTransaction(
+                this.tronWeb,
+                'TriggerSmartContract', 
+                {
+                    data: args.data,
+                    owner_address: args.owner_address,
+                    contract_address: args.contract_address,
+                },
+                options.permissionId,
+                {
+                    fee_limit: parseInt(feeLimit),
+                }
+            ).then(transaction => {
+                callback(null, {
+                    result: {
+                        result: true,
+                    },
+                    transaction,
                 })
-                .catch(err => callback(err));
+            }).catch(err => callback(err));
         }
     }
 
-    clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, options, callback = false) {
+    clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, options, callback = false) {     
         if (utils.isFunction(options)) {
             callback = options;
             options = {};
@@ -1310,7 +1336,7 @@ export default class TransactionBuilder {
             options = ownerAddress;
             ownerAddress = this.tronWeb.defaultAddress.hex;
         }
-
+        
         if (!callback)
             return this.injectPromise(this.clearABI, contractAddress, ownerAddress, options);
 
@@ -1498,10 +1524,10 @@ export default class TransactionBuilder {
             end_time: parseInt(saleEnd),
             free_asset_net_limit: parseInt(freeBandwidth),
             public_free_asset_net_limit: parseInt(freeBandwidthLimit),
-            frozen_supply: {
+            frozen_supply: [{
                 frozen_amount: parseInt(frozenAmount),
                 frozen_days: parseInt(frozenDuration)
-            }
+            }]
         };
         ['name', 'abbr', 'description', 'url'].forEach((key) => {
             if (!data[key]) {
@@ -2400,13 +2426,26 @@ export default class TransactionBuilder {
             owner_address: ownerAddress
         }
         if (ownerPermissions) {
-            data.owner = ownerPermissions
+            const _ownerPermissions = deepCopyJson(ownerPermissions);
+            // for compatible with old way of building transaction from chain which type prop is omitted
+            if ('type' in _ownerPermissions) {
+                delete _ownerPermissions.type;
+            }
+            data.owner = _ownerPermissions;
         }
         if (witnessPermissions) {
-            data.witness = witnessPermissions
+            const _witnessPermissions = deepCopyJson(witnessPermissions);
+            // for compatible with old way of building transaction from chain which type prop is Witness
+            _witnessPermissions.type = 'Witness';
+            data.witness = _witnessPermissions;
         }
         if (activesPermissions) {
-            data.actives = activesPermissions.length === 1 ? activesPermissions[0] : activesPermissions
+            const _activesPermissions = deepCopyJson(activesPermissions);
+            // for compatible with old way of building transaction from chain which type prop is Active
+            _activesPermissions.forEach((activePermissions) => {
+                activePermissions.type = 'Active';
+            });
+            data.actives = _activesPermissions;
         }
 
         createTransaction(this.tronWeb, 'AccountPermissionUpdateContract', data, options?.permissionId)
