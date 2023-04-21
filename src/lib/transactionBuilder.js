@@ -1343,6 +1343,7 @@ export default class TransactionBuilder {
                     fee_limit: parseInt(feeLimit),
                 },
                 mytx
+                }
             ).then(transaction => {
                 if(`${__MODE__}` === 'mTronWeb' && functionSelector) {
                     transaction = {
@@ -2481,9 +2482,7 @@ export default class TransactionBuilder {
             data.witness = _witnessPermissions;
         }
         if (activesPermissions) {
-            console.log("activesPermissions: ",activesPermissions)
             const _activesPermissions = deepCopyJson(activesPermissions);
-            console.log("_activesPermissions: ",_activesPermissions);
             // for compatible with old way of building transaction from chain which type prop is Active
             _activesPermissions.forEach((activePermissions) => {
                 activePermissions.type = 'Active';
