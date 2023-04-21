@@ -37,11 +37,8 @@
         "elliptic": "^6.5.4",
         "ethers": "^5.7.2",
         "eventemitter3": "^3.1.0",
-<<<<<<< HEAD
         "hashmap": "^2.4.0",
         "@tronweb3/google-protobuf": "^3.21.2",
-=======
->>>>>>> release/v5.2.0
         "injectpromise": "^1.0.0",
         "lodash": "^4.17.21",
         "semver": "^5.6.0",
