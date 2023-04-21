@@ -67,7 +67,7 @@ const newTestAccountsInMain = async (amount) => {
     let accounts="";
     for (let i = 0; i < amount; i++) {
         const newAccount1 = await tronWeb.createAccount();
-        await tronWeb.trx.sendTrx(newAccount1.address.hex,10000000000,{privateKey: PRIVATE_KEY})
+        await tronWeb.trx.sendTrx(newAccount1.address.hex,1000000000,{privateKey: PRIVATE_KEY})
         if (i == amount-1) {
             accounts+=newAccount1.privateKey;
         } else {

@@ -16,7 +16,7 @@
         "test": "npx mocha 'test/testCase/mainChain/transactionBuilder.test.js'  --timeout 9900000",
         "testAbi": "node scripts/test-node.js && node test/helpers/newAccounts 1 && npx mocha 'test/**/abi.test.js' --timeout 120000",
         "testTx": "node scripts/test-node.js && node test/helpers/newAccounts 100 && npx mocha 'test/**/transaction.test.js' --timeout 120000",
-        "testV520": "npx mocha 'test/testCase/mainChain/quinceTest.js'  --timeout 9900000",
+        "testV520": "npx mocha 'test/testCase/mainChain/quince_SC_TransactionCompare.js'  --timeout 9900000",
         "test-no-accounts": "node scripts/test-node.js && npx mocha 'test/**/*.test.js'",
         "test:browser": "npm run-script newaccount && node scripts/test-browser.js && npx karma start --single-run --browsers ChromeHeadless",
         "coverage": "npm run-script test:browser && npm run-script test",

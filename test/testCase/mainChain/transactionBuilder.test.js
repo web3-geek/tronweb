@@ -2511,7 +2511,7 @@ describe('TronWeb.transactionBuilder', function () {
         before(async () => {
             await broadcaster.broadcaster(tronWeb.transactionBuilder.sendTrx(accounts.b58[6], 10000e6), PRIVATE_KEY);
             const transaction = await tronWeb.transactionBuilder.applyForSR(accounts.b58[6], 'url.tron.network');
-            await broadcaster.broadcaster(transaction, accounts.pks[6]);
+            await broadcaster.broafdcaster(transaction, accounts.pks[6]);
             while (true) {
                 const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
                 if (Object.keys(tx).length === 0) {
