@@ -1336,14 +1336,13 @@ export default class TransactionBuilder {
             }
             createTransaction(
                 this.tronWeb,
-                'TriggerSmartContract', 
+                'TriggerSmartContract',
                 value,
                 options.permissionId,
                 {
                     fee_limit: parseInt(feeLimit),
                 },
                 mytx
-                }
             ).then(transaction => {
                 if(`${__MODE__}` === 'mTronWeb' && functionSelector) {
                     transaction = {

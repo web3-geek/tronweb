@@ -47,8 +47,8 @@ describe('TronWeb.transactionBuilder', function () {
 
     });
 
-    describe.only("#createSmartContract", async function () {
-            it.only ('should create a smart contract with default parameters', async function () {
+    describe("#createSmartContract", async function () {
+            it('should create a smart contract with default parameters', async function () {
                 const options = {
                     abi: testRevert.abi,
                     bytecode: testRevert.bytecode,
@@ -70,16 +70,14 @@ describe('TronWeb.transactionBuilder', function () {
                                visible: false
                                 };
 
-                for (let i = 0; i < 2; i++) {
-                    if (i === 1) options.permissionId = 2;
-                    if (i === 1) data.Permission_id = 2;
-                    tx1 = await tronWeb.fullNode.request('wallet/deploycontract', data, 'post');
-                    console.log('TronGrid ', JSON.stringify(tx1, null, 2));
-                    const tx2 = await tronWeb.transactionBuilder.createSmartContract(options,tronWeb.defaultAddress.hex, tx1)
-                    console.log('TronWeb ', JSON.stringify(tx2, null, 2));
-                    result = await broadcaster.broadcaster(null, tronWeb.defaultAddress.privateKey, tx2);
-                    console.log("result: ",result)
-                    while (true) {
+
+                tx1 = await tronWeb.fullNode.request('wallet/deploycontract', data, 'post');
+                console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+                const tx2 = await tronWeb.transactionBuilder.createSmartContract(options,tronWeb.defaultAddress.hex, tx1)
+                console.log('TronWeb ', JSON.stringify(tx2, null, 2));
+                result = await broadcaster.broadcaster(null, tronWeb.defaultAddress.privateKey, tx2);
+                console.log("result: ",result)
+                while (true) {
                                                 const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
                                                 if (Object.keys(tx).length === 0) {
                                                     await wait(3);
@@ -87,18 +85,17 @@ describe('TronWeb.transactionBuilder', function () {
                                                 } else {
                                                     break;
                                                 }
-                                            }
+                               }
 
-                    if (!_.isEqual(tx1,tx2)) {
+                if (!_.isEqual(tx1,tx2)) {
                           console.error('smart contract with default parameters not equal');
                           //console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
                           //console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
 
-                    } else {
+                } else {
                           console.info('smart contract with default parameters goes well');
-                    }
-
                 }
+
             });
 
             it('should create a smart contract with array parameters', async function () {
@@ -295,7 +292,44 @@ describe('TronWeb.transactionBuilder', function () {
                 }
             });*/
         });
-        describe('#updateSetting()', function () {
+
+    describe.only("#triggerSmartContractWithFuncABIV2 (V2 input)", async function () {
+
+            it('should create or trigger a smart contract with funcABIV2 (V2 input)', async function () {
+                let coder = tronWeb.utils.abi;
+                const issuerAddress = accounts.hex[0];
+                const issuerPk = accounts.pks[0];
+                const abi = JSON.parse(funcABIV2_2.interface);
+                const bytecode = funcABIV2_2.bytecode;
+                const outputValues = getValues(JSON.parse(funcABIV2_2.values))
+                const transaction = await tronWeb.transactionBuilder.createSmartContract(
+                    {
+                        abi,
+                        bytecode,
+                    },
+                    issuerAddress
+                );
+                await broadcaster.broadcaster(null, issuerPk, transaction);
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(
+                        transaction.txID
+                    );
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+
+                const deployed = await tronWeb
+                    .contract(abi, transaction.contract_address)
+                let check = await deployed.test().call();
+                assert.ok(equals(check[0], outputValues[0]));
+            });
+    });
+
+    describe('#updateSetting()', function () {
             let transaction;
                 before(async function () {
                     this.timeout(20000);
@@ -340,7 +374,7 @@ describe('TronWeb.transactionBuilder', function () {
                 });
         });
 
-        describe("#updateEnergyLimit", function () {
+    describe("#updateEnergyLimit", function () {
                 let transaction;
                 before(async function () {
                     this.timeout(20000);
@@ -376,7 +410,6 @@ describe('TronWeb.transactionBuilder', function () {
                     const authResult =TronWeb.utils.transaction.txCheck(tx2);
                     assert.equal(authResult, true);
 
-
                     if (!_.isEqual(tx1,tx2)) {
                                                 console.error('updateEnergyLimit not equal');
                                                 console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
@@ -387,18 +420,37 @@ describe('TronWeb.transactionBuilder', function () {
                 });
             });
 
-            describe("#vote", async function () {
+    describe("#vote", async function () {
                     let url = 'https://xtron.network';
                     before(async function () {
                         /**
                          * Execute this method when Proposition 70 is not enabled
                          */
-                        // await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalance(100e6, 3, 'BANDWIDTH', accounts.b58[11]), accounts.pks[11])
+                        //await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalance(100e6, 3, 'BANDWIDTH', accounts.b58[11]), accounts.pks[11])
+                        param = [100000000,3,'BANDWIDTH', accounts.b58[11]];
+                        const transaction = await tronWeb.transactionBuilder.freezeBalance(...param);
+                        const result = await broadcaster.broadcaster(null,accounts.pks[11],transaction);
+                        console.log("result ",result);
+
                         /**
                          * Execute this method when Proposition 70 is enabled
                          */
-                        await broadcaster.broadcaster(tronWeb.transactionBuilder.freezeBalanceV2(100e6,'BANDWIDTH', accounts.b58[11]), accounts.pks[11])
+                        /*param = [100000000, 'BANDWIDTH', accounts.b58[11]];
+                        const transaction = await tronWeb.transactionBuilder.freezeBalanceV2(...param);
+                        const result = await broadcaster.broadcaster(null,accounts.pks[11],transaction);
+                        console.log("result ",result);*/
+                        while (true) {
+                                                const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                                                if (Object.keys(tx).length === 0) {
+                                                    await wait(3);
+                                                    continue;
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+
                     })
+
 
                     it('should allows accounts[1] to vote for accounts[0] as SR', async function () {
                         const data = {
@@ -408,8 +460,7 @@ describe('TronWeb.transactionBuilder', function () {
                                     vote_count: 5
                                 }
                             ],
-                            visible: false,
-                            Permission_id: 2
+                            visible: false
 
                         }
                         tx1 = await tronWeb.fullNode.request('wallet/votewitnessaccount', data, 'post');
@@ -435,10 +486,12 @@ describe('TronWeb.transactionBuilder', function () {
 
                     })
 
-            });
+    });
 
 
 
-       });
+
+
+});
 
 
