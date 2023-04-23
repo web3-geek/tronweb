@@ -293,7 +293,7 @@ describe('TronWeb.transactionBuilder', function () {
             });*/
         });
 
-    describe.only("#triggerSmartContractWithFuncABIV2 (V2 input)", async function () {
+    describe("#triggerSmartContractWithFuncABIV2 (V2 input)", async function () {
 
             it('should create or trigger a smart contract with funcABIV2 (V2 input)', async function () {
                 let coder = tronWeb.utils.abi;
@@ -420,6 +420,109 @@ describe('TronWeb.transactionBuilder', function () {
                 });
             });
 
+    describe("#clearabi", async function () {
+
+            let transactions = [];
+            let contracts = [];
+            before(async function () {
+                this.timeout(20000);
+
+                transactions.push(await tronWeb.transactionBuilder.createSmartContract({
+                    abi: testConstant.abi,
+                    bytecode: testConstant.bytecode
+                }, accounts.hex[7]));
+                transactions.push(await tronWeb.transactionBuilder.createSmartContract({
+                    abi: testConstant.abi,
+                    bytecode: testConstant.bytecode
+                }, accounts.hex[7]));
+                transactions.forEach(async (tx) => {
+                    contracts.push(await broadcaster.broadcaster(null, accounts.pks[7], tx));
+                });
+
+                while (true) {
+                    const tx1 = await tronWeb.trx.getTransactionInfo(transactions[0].txID);
+                    const tx2 = await tronWeb.trx.getTransactionInfo(transactions[1].txID);
+                    if (Object.keys(tx1).length === 0 || Object.keys(tx2).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+            })
+
+            it('should clear contract abi', async function () {
+                this.timeout(10000);
+
+                const params = [
+                    [transactions[0], accounts.hex[7], {permissionId: 2}],
+                    [transactions[1], accounts.hex[7]],
+                ];
+                for (const param of params) {
+                    const contractAddress = param[0].contract_address;
+                    const ownerAddress = param[1];
+
+                    // verify contract abi before
+                    const contract = await tronWeb.trx.getContract(contractAddress);
+                    assert.isTrue(Object.keys(contract.abi).length > 0);
+                    let data;
+                    // clear abi
+                    if (param.length === 2) {
+                        data = {
+                            owner_address: ownerAddress,
+                            contract_address:contractAddress,
+                            visible:false
+                        }
+                    }else{
+                        data = {
+                            owner_address: ownerAddress,
+                            contract_address: contractAddress,
+                            visible: false,
+                            Permission_id: 2
+                            }
+                    }
+
+                    const gridtx = await tronWeb.fullNode.request('wallet/clearabi', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                    const transaction = await tronWeb.transactionBuilder.clearABI(contractAddress, ownerAddress, param[2],gridtx);
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                        console.error('clearabi not equal');
+                        console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                        console.info('clearabi goes well');
+                    }
+
+                    const parameter = txPars(transaction);
+                    assert.isTrue(!transaction.visible &&
+                        transaction.raw_data.contract[0].parameter.type_url === 'type.googleapis.com/protocol.ClearABIContract');
+                    assert.equal(transaction.txID.length, 64);
+                    assert.equal(parameter.value.contract_address, tronWeb.address.toHex(contractAddress));
+                    assert.equal(parameter.value.owner_address, tronWeb.address.toHex(ownerAddress));
+                    assert.equal(transaction.raw_data.contract[0].Permission_id, param[2]?.permissionId);
+
+                    if (param.length === 2) {
+                        const res = await broadcaster.broadcaster(null, accounts.pks[7], transaction);
+                        assert.isTrue(res.receipt.result);
+
+                        let contract;
+                        // verify contract abi after
+                        while (true) {
+                            contract = await tronWeb.trx.getContract(contractAddress);
+                            if (Object.keys(contract.abi).length > 0) {
+                                await wait(3);
+                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                        assert.isTrue(Object.keys(contract.abi).length === 0);
+                    }
+                }
+            });
+    });
+
     describe("#vote", async function () {
                     let url = 'https://xtron.network';
                     before(async function () {
@@ -467,7 +570,7 @@ describe('TronWeb.transactionBuilder', function () {
                         console.log('TronGrid ', JSON.stringify(tx1, null, 2));
                         let votes = {}
                         votes[tronWeb.address.toHex(WITNESS_ACCOUNT)] = 5
-                        const tx2 = await tronWeb.transactionBuilder.vote(votes, accounts.b58[11],tx1)
+                        const tx2 = await tronWeb.transactionBuilder.vote(votes, accounts.b58[11],{},tx1)
                         console.log('TronWeb ', JSON.stringify(tx2, null, 2));
                         const parameter = txPars(tx2);
 
@@ -488,10 +591,703 @@ describe('TronWeb.transactionBuilder', function () {
 
     });
 
+    describe('#withdrawBalance', function () {
+
+            // this is not fully testable because the minimum time before withdrawBlockRewards is 1 days
+            // witnessAccount does not have any reward
+
+            it(`should withdraw balance`, async function () {
+                const params = [
+                    [WITNESS_ACCOUNT, { permissionId: 2 }],
+                    [WITNESS_ACCOUNT]
+                ];
+
+                for (let i = 0; i < 2; i++) {
+                    let data;
+                    let param;
+                    // clear abi
+                    if (i === 0) {
+                        data = {
+                            owner_address: tronWeb.address.toHex(WITNESS_ACCOUNT),
+                            visible:false
+                        }
+
+                    }else{
+                        data = {
+                            owner_address: tronWeb.address.toHex(WITNESS_ACCOUNT),
+                            visible: false,
+                            Permission_id: 2
+                        }
+                    }
+
+                    const gridtx = await tronWeb.fullNode.request('wallet/withdrawbalance', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                    if (i === 0) {
+                                    param = [WITNESS_ACCOUNT,{}, gridtx];
+
+                    }else{
+                                    param = [WITNESS_ACCOUNT, { permissionId: 2 },gridtx];
+                          }
+                    //console.log("Param ",param)
+                    const transaction = await tronWeb.transactionBuilder.withdrawBlockRewards(...param);
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                                            console.error('withdrawBalance not equal');
+                                            console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                                            console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                                        } else {
+                                            console.info('withdrawBalance goes well');
+                                        }
+
+                    const authResult =TronWeb.utils.transaction.txCheck(transaction);
+                    assert.equal(authResult, true);
+                }
+            });
+        });
+
+    describe("#createProposal", async function () {
+
+            let parametersUsed = [{"key": 0, "value": 100000}, {"key": 1, "value": 2}]
+            const witnessAccount = "TT1smsmhxype64boboU8xTuNZVCKP1w6qT"
+
+            it('should allow the SR account to create a new proposal as a single object', async function () {
+
+                await tronWeb.trx.sendTrx(witnessAccount,10000000000,{privateKey: PRIVATE_KEY})
+                for (let i = 0; i < 2; i++)  {
+                    if (i === 0) {
+                        data = {
+                            owner_address: tronWeb.address.toHex(witnessAccount),
+                            parameters:parametersUsed[0],
+                            visible:false
+                        }
+                    }else{
+                        data = {
+                            owner_address: tronWeb.address.toHex(witnessAccount),
+                            parameters:parametersUsed[1],
+                            visible: false,
+                            Permission_id: 2
+                            }
+                    }
+
+                    const gridtx = await tronWeb.fullNode.request('wallet/proposalcreate', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                    if (i === 0) {
+                         param = [parametersUsed[0], witnessAccount,{}, gridtx];
+                    }else{
+                         param = [parametersUsed[1], witnessAccount, {permissionId: 2},gridtx];
+                    }
+                    const transaction = await tronWeb.transactionBuilder.createProposal(...param)
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2))
+                    if (!_.isEqual(gridtx,transaction)) {
+                                                                console.error('createProposal case 1 not equal');
+                                                                console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                                                                console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                                                            } else {
+                                                                console.info('createProposal case 1 goes well');
+                                                            }
 
 
+                }
+
+            })
+
+            it('should allow the SR account to create a new proposal as an array of objects', async function () {
+                for (let i = 0; i < 2; i++)  {
+                    if (i === 0) {
+                        data = {
+                            owner_address: tronWeb.address.toHex(witnessAccount),
+                            parameters:parametersUsed,
+                            visible:false
+                        }
+                    }else{
+                        data = {
+                            owner_address: tronWeb.address.toHex(witnessAccount),
+                            parameters:parametersUsed,
+                            visible: false,
+                            Permission_id: 2
+                        }
+                    }
+
+                    const gridtx = await tronWeb.fullNode.request('wallet/proposalcreate', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                    if (i === 0) {
+                         param = [parametersUsed, witnessAccount,{}, gridtx];
+                    }else{
+                         param = [parametersUsed, witnessAccount, {permissionId: 2},gridtx];
+                    }
+                    const transaction = await tronWeb.transactionBuilder.createProposal(...param)
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2))
+                    if (!_.isEqual(gridtx,transaction)) {
+                        console.error('createProposal case 2 not equal');
+                        console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                        console.info('createProposal case 2 goes well');
+                    }
 
 
+                }
+            });
+    });
+
+    describe("#deleteProposal", async function () {
+
+
+            let proposals;
+            const witnessAccount = "TT1smsmhxype64boboU8xTuNZVCKP1w6qT";
+            const witnessKey = "9FD8E129DE181EA44C6129F727A6871440169568ADE002943EAD0E7A16D8EDAC";
+
+            before(async function () {
+
+                this.timeout(20000)
+
+                let parameters = [{"key": 0, "value": 100000}, {"key": 1, "value": 2}]
+
+                await broadcaster.broadcaster(tronWeb.transactionBuilder.createProposal(parameters, witnessAccount), witnessKey)
+
+                proposals = await tronWeb.trx.listProposals();
+                console.log("proposals:"+util.inspect(proposals,true,null,true))
+            })
+
+            after(async function () {
+                proposals = await tronWeb.trx.listProposals();
+                if (proposals[0].state !== 'CANCELED')
+                    await broadcaster.broadcaster(tronWeb.transactionBuilder.deleteProposal(proposals[0].proposal_id, witnessAccount), witnessKey)
+            })
+
+            it('should allow the SR to delete its own proposal', async function () {
+                for (let i = 0; i < 2; i++) {
+                    let data;
+                    let param;
+                    if (i === 0) {
+                        data = {
+                        owner_address: tronWeb.address.toHex(witnessAccount),
+                        proposal_id: proposals[0].proposal_id,
+                        visible:false
+                        }
+
+                    }else{
+                        data = {
+                        owner_address: tronWeb.address.toHex(witnessAccount),
+                        proposal_id: proposals[0].proposal_id,
+                        visible: false,
+                        Permission_id: 2
+                        }
+                    }
+
+                    const gridtx = await tronWeb.fullNode.request('wallet/proposaldelete', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                        if (i === 0) {
+                             param = [proposals[0].proposal_id, witnessAccount, gridtx];
+                        }else{
+                             param = [proposals[0].proposal_id, witnessAccount, {permissionId: 2},gridtx];
+                        }
+                    const transaction = await tronWeb.transactionBuilder.deleteProposal(...param)
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                        console.error('deleteProposal not equal');
+                        console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                        console.info('deleteProposal goes well');
+                    }
+
+                    }
+
+            });
+    });
+
+    describe("#applyForSR", async function () {
+
+            let url = 'https://xtron.network';
+
+            it('should allow accounts[0] to apply for SR', async function () {
+               data = {
+                   url:tronWeb.fromUtf8(url),
+                   owner_address: accounts.hex[10],
+                   visible: false,
+               }
+               const gridtx = await tronWeb.fullNode.request('wallet/createwitness', data, 'post');
+               console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+               const transaction = await tronWeb.transactionBuilder.applyForSR(accounts.b58[10], url,{},gridtx);
+               console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+               if (!_.isEqual(gridtx,transaction)) {
+                   console.error('applyForSR not equal');
+                   console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                   console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+               } else {
+                   console.info('applyForSR goes well');
+               }
+               const parameter = txPars(transaction);
+               assert.equal(parameter.value.owner_address, accounts.hex[10]);
+               await assertEqualHex(parameter.value.url, url);
+               assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WitnessCreateContract');
+            });
+    });
+
+    describe("#updateBrokerage", async function () {
+
+            before(async function () {
+                await broadcaster.broadcaster(tronWeb.transactionBuilder.sendTrx(accounts.b58[1], 10000e6), PRIVATE_KEY);
+                await broadcaster.broadcaster(tronWeb.transactionBuilder.applyForSR(accounts.b58[1], 'abc.tron.network'), accounts.pks[1])
+            })
+
+            it('should update sr brokerage successfully', async function () {
+                // const transaction = await tronWeb.transactionBuilder.updateBrokerage(10, accounts.hex[1]);
+                for (let i = 0; i < 2; i++) {
+                    let data;
+                    let param;
+                    if (i === 0) {
+                                        data = {
+                                        owner_address: accounts.hex[1],
+                                        brokerage: 20,
+                                        visible:false
+                                        }
+
+                    }else{
+                                        data = {
+                                        owner_address: accounts.hex[1],
+                                        brokerage: 10,
+                                        visible: false,
+                                        Permission_id: 2
+                                        }
+                    }
+                   const gridtx = await tronWeb.fullNode.request('wallet/updateBrokerage', data, 'post');
+                   console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                   if (i === 0) {
+                       param = [20, accounts.hex[1],{},gridtx];
+                   }else{
+                       param = [10, accounts.hex[1], {permissionId: 2},gridtx];
+                   }
+                    const transaction = await tronWeb.transactionBuilder.updateBrokerage(...param);
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                        console.error('updateBrokerage not equal');
+                        console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                        console.info('updateBrokerage goes well');
+                    }
+                    const parameter = txPars(transaction);
+                    assert.equal(transaction.txID.length, 64);
+                    assert.equal(parameter.value.brokerage, param[0]);
+                    assert.equal(parameter.value.owner_address, param[1]);
+                    assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UpdateBrokerageContract');
+                    assert.equal(transaction.raw_data.contract[0].Permission_id, param[2]?.permissionId);
+                }
+            });
+    });
+
+    describe("#tradeExchangeTokens", async function () {
+            const idxS = 27;
+            const idxE = 29;
+            let tokenNames = [];
+            let exchangeId = '';
+
+            before(async function () {
+                // create token
+                for (let i = idxS; i < idxE; i++) {
+                    const options = getTokenOptions();
+                    const transaction = await tronWeb.transactionBuilder.createToken(options, accounts.hex[i]);
+                    result = await broadcaster.broadcaster(null, accounts.pks[i], transaction);
+                    console.log("broadcast result1: ",result)
+                    await wait(15);
+                    await waitChainData('token', accounts.hex[i]);
+                    const token = await tronWeb.trx.getTokensIssuedByAddress(accounts.hex[i]);
+                    console.log("token ",token);
+                    await waitChainData('tokenById', token[Object.keys(token)[0]]['id']);
+                    console.log("tokenById ", token[Object.keys(token)[0]]['id'])
+                    result = await broadcaster.broadcaster(null, accounts.pks[i], await tronWeb.transactionBuilder.sendToken(
+                        tronWeb.defaultAddress.hex,
+                        10e4,
+                        token[Object.keys(token)[0]]['id'],
+                        token[Object.keys(token)[0]]['owner_address']
+                    ));
+                    console.log("broadcast result2 ", result);
+                    tokenNames.push(token[Object.keys(token)[0]]['id']);
+                }
+                // console.log(tokenNames, 99999999);
+                const transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[1], 10, tokenNames[0], 10);
+                result = await broadcaster.broadcaster(transaction);
+                console.log("broadcast result3 ", result);
+                let receipt = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                while (!Object.keys(receipt).length) {
+                    await wait(5);
+                    receipt = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                }
+                exchangeId = receipt.exchange_id;
+            });
+
+            it(`should trade exchange tokens`, async function () {
+                for (let i = 0; i < 2; i++) {
+                    let data;
+                    let param;
+                    if (i === 0) {
+                        data = {
+                        owner_address: tronWeb.defaultAddress.hex,
+                        exchange_id: exchangeId,
+                        token_id: tronWeb.fromUtf8(tokenNames[i]),
+                        quant: 10,
+                        expected: 5,
+                        visible:false
+                    }
+
+                    }else{
+                        data = {
+                            owner_address: tronWeb.defaultAddress.hex,
+                            exchange_id: exchangeId,
+                            token_id: tronWeb.fromUtf8(tokenNames[i]),
+                            quant: 10,
+                            expected: 5,
+                            visible: false,
+                            Permission_id: 2
+                        }
+                    }
+
+                    const gridtx = await tronWeb.fullNode.request('wallet/exchangetransaction', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                    if (i === 0) {
+                        param = [exchangeId, tokenNames[i], 10, 5, tronWeb.defaultAddress.hex, {}, gridtx];
+                    }else{
+                        param = [exchangeId, tokenNames[i], 10, 5, tronWeb.defaultAddress.hex, { permissionId: 2 }, gridtx];
+                    }
+                    const transaction = await tronWeb.transactionBuilder.tradeExchangeTokens(...param);
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                                            console.error('tradeExchangeTokens not equal');
+                                            console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                                            console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                                        } else {
+                                            console.info('tradeExchangeTokens goes well');
+                                        }
+
+                    const authResult =
+                        TronWeb.utils.transaction.txCheck(transaction);
+                    assert.equal(authResult, true);
+
+                    transaction.raw_data_hex = transaction.raw_data_hex + '00';
+                    const authResult2 =
+                        TronWeb.utils.transaction.txCheck(transaction);
+                    assert.equal(authResult2, false);
+
+                    transaction.txID = transaction.txID + '00'
+                    const authResult3 =
+                        TronWeb.utils.transaction.txCheck(transaction);
+                    assert.equal(authResult3, false);
+                }
+            });
+    });
+
+    describe("#createTokenExchange", async function () {
+
+            const idxS = 13;
+            const idxE = 15;
+            const toIdx1 = 5;
+            const toIdx2 = 6;
+            let tokenNames = [];
+
+            before(async function () {
+                this.timeout(90000);
+
+                // create token
+                for (let i = idxS; i < idxE; i++) {
+                    const options = getTokenOptions();
+                    const transaction = await tronWeb.transactionBuilder.createToken(options, accounts.hex[i]);
+                    result1 = await broadcaster.broadcaster(null, accounts.pks[i], transaction);
+                    console.log("result1: ",result1);
+                    await wait(15);
+                    assert.equal(transaction.txID.length, 64);
+                    await waitChainData('token', accounts.hex[i]);
+                    const token = await tronWeb.trx.getTokensIssuedByAddress(accounts.hex[i]);
+                    await waitChainData('tokenById', token[Object.keys(token)[0]]['id']);
+                    result2 = await broadcaster.broadcaster(null, accounts.pks[i], await tronWeb.transactionBuilder.sendToken(
+                        accounts.hex[toIdx1],
+                        10e4,
+                        token[Object.keys(token)[0]]['id'],
+                        token[Object.keys(token)[0]]['owner_address']
+                    ));
+                    console.log("result2: ",result2);
+                    await waitChainData('sendToken', accounts.hex[toIdx1], 0);
+                    result3 = await broadcaster.broadcaster(null, accounts.pks[i], await tronWeb.transactionBuilder.sendToken(
+                        accounts.hex[toIdx2],
+                        10e4,
+                        token[Object.keys(token)[0]]['id'],
+                        token[Object.keys(token)[0]]['owner_address']
+                    ));
+                    console.log("result3: ",result3);
+                    await waitChainData('sendToken', accounts.hex[toIdx2], 0);
+                    tokenNames.push(token[Object.keys(token)[0]]['id']);
+                }
+
+            });
+
+            it('should create token exchange', async function () {
+                data ={
+                    owner_address: accounts.hex[toIdx1],
+                    first_token_id: tronWeb.fromUtf8(tokenNames[0]),
+                    second_token_id: tronWeb.fromUtf8(tokenNames[1]),
+                    first_token_balance: 10e3,
+                    second_token_balance: 10e3,
+                    visible: false
+                };
+                gridtx = await tronWeb.fullNode.request('wallet/exchangecreate', data, 'post');
+                console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                let transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[0], 10e3, tokenNames[1], 10e3, accounts.hex[toIdx1],{},gridtx);
+                console.log('TronWeb ', JSON.stringify(gridtx, null, 2));
+                if (!_.isEqual(gridtx,transaction)) {
+                                                            console.error('createTokenExchange not equal');
+                                                            console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                                                            console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                                                        } else {
+                                                            console.info('createTokenExchange goes well');
+                                                        }
+                let parameter = txPars(transaction);
+                assert.equal(transaction.txID.length, 64);
+                assert.equal(TronWeb.toUtf8(parameter.value.first_token_id), tokenNames[0]);
+                assert.equal(TronWeb.toUtf8(parameter.value.second_token_id), tokenNames[1]);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.ExchangeCreateContract');
+                assert.isUndefined(transaction.raw_data.contract[0].Permission_id);
+
+                data ={
+                                    owner_address: accounts.hex[toIdx1],
+                                    first_token_id: tronWeb.fromUtf8(tokenNames[0]),
+                                    second_token_id: tronWeb.fromUtf8(tokenNames[1]),
+                                    first_token_balance: 10e3,
+                                    second_token_balance: 10e3,
+                                    visible: false,
+                                    Permission_id: 2
+                                };
+                gridtx = await tronWeb.fullNode.request('wallet/exchangecreate', data, 'post');
+                                console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                console.log("TronGrid ",gridtx);
+                transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[0], 10e3, tokenNames[1], 10e3, accounts.hex[toIdx1], {permissionId: 2},gridtx);
+                console.log("TronWeb ",transaction);
+                if (!_.isEqual(gridtx,transaction)) {
+                                                         console.error('createTokenExchange not equal');
+                                                         console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                                                         console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                                                     } else {
+                                                         console.info('createTokenExchange goes well');
+                                                     }
+                parameter = txPars(transaction);
+                assert.equal(transaction.txID.length, 64);
+                assert.equal(TronWeb.toUtf8(parameter.value.first_token_id), tokenNames[0]);
+                assert.equal(TronWeb.toUtf8(parameter.value.second_token_id), tokenNames[1]);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.ExchangeCreateContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id, 2);
+            });
+
+        });
+
+    describe("#injectExchangeTokens", async function () {
+            const idxS = 16;
+            const idxE = 18;
+            let tokenNames = [];
+            let exchangeId = '';
+
+            before(async function () {
+
+                // create token
+                for (let i = idxS; i < idxE; i++) {
+                    const options = getTokenOptions();
+                    const transaction = await tronWeb.transactionBuilder.createToken(options, accounts.hex[i]);
+                    result1 = await broadcaster.broadcaster(null, accounts.pks[i], transaction);
+                    console.log("result1: ",result1);
+                    await waitChainData('token', accounts.hex[i]);
+                    const token = await tronWeb.trx.getTokensIssuedByAddress(accounts.hex[i]);
+                    await waitChainData('tokenById', token[Object.keys(token)[0]]['id']);
+                    result2 = await broadcaster.broadcaster(null, accounts.pks[i], await tronWeb.transactionBuilder.sendToken(
+                        tronWeb.defaultAddress.hex,
+                        10e4,
+                        token[Object.keys(token)[0]]['id'],
+                        token[Object.keys(token)[0]]['owner_address']
+                    ));
+                    console.log("result2: ",result2);
+                    tokenNames.push(token[Object.keys(token)[0]]['id']);
+                }
+                const transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[1], 10, tokenNames[0], 10);
+                result3 = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+                console.log("result3: ",result3);
+
+                let receipt = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                while (!Object.keys(receipt).length) {
+                    await wait(5);
+                    receipt = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                }
+                exchangeId = receipt.exchange_id;
+            });
+            it(`should inject exchange tokens`, async function () {
+                    for (let i = 0; i < 2; i++) {
+                        let data;
+                        let param;
+                        if (i === 0) {
+                            data = {
+                                owner_address: tronWeb.defaultAddress.hex,
+                                exchange_id: exchangeId,
+                                token_id: tronWeb.fromUtf8(tokenNames[0]),
+                                quant: 10,
+                                visible:false
+                            }
+                        }else{
+                            data = {
+                                owner_address: tronWeb.defaultAddress.hex,
+                                exchange_id: exchangeId,
+                                token_id: tronWeb.fromUtf8(tokenNames[0]),
+                                quant: 10,
+                                visible: false,
+                                Permission_id: 2
+                            }
+                        }
+
+                        gridtx = await tronWeb.fullNode.request('wallet/exchangeinject', data, 'post');
+                        console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                        if (i === 0) {
+                              param = [exchangeId, tokenNames[0], 10, tronWeb.defaultAddress.hex, {}, gridtx];
+                        }else{
+                              param = [exchangeId, tokenNames[0], 10, tronWeb.defaultAddress.hex, { permissionId: 2 }, gridtx];
+                        }
+                        const transaction = await tronWeb.transactionBuilder.injectExchangeTokens(
+                            ...param
+                        );
+                        console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                        if (!_.isEqual(gridtx,transaction)) {
+                                                                    console.error('injectExchangeTokens not equal');
+                                                                    console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                                                                    console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                                                                } else {
+                                                                    console.info('injectExchangeTokens goes well');
+                                                                }
+
+                        const authResult =
+                            TronWeb.utils.transaction.txCheck(transaction);
+                        assert.equal(authResult, true);
+                }
+            });
+
+    });
+
+        describe("#withdrawExchangeTokens", async function () {
+            const idxS = 0;
+            const idxE = 2;
+            let tokenNames = [];
+            let exchangeId = '';
+
+            before(async function () {
+                // create token
+                for (let i = idxS; i < idxE; i++) {
+                    const options = getTokenOptions();
+                    const transaction = await tronWeb.transactionBuilder.createToken(options, accounts.hex[i]);
+                    result1 = await broadcaster.broadcaster(null, accounts.pks[i], transaction);
+                    console.log("result1: ",result1);
+                    await waitChainData('token', accounts.hex[i]);
+                    const token = await tronWeb.trx.getTokensIssuedByAddress(accounts.hex[i]);
+                    await waitChainData('tokenById', token[Object.keys(token)[0]]['id']);
+                    result2 = await broadcaster.broadcaster(null, accounts.pks[i], await tronWeb.transactionBuilder.sendToken(
+                        tronWeb.defaultAddress.hex,
+                        10e4,
+                        token[Object.keys(token)[0]]['id'],
+                        token[Object.keys(token)[0]]['owner_address']
+                    ));
+                    console.log("result2: ",result2);
+                    tokenNames.push(token[Object.keys(token)[0]]['id']);
+                }
+                const transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[1], 10, tokenNames[0], 10);
+                result3 = await broadcaster.broadcaster(transaction);
+                console.log("result3: ",result3);
+                let receipt = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                while (!Object.keys(receipt).length) {
+                    await wait(5);
+                    receipt = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                }
+                exchangeId = receipt.exchange_id;
+
+                transaction.raw_data_hex = transaction.raw_data_hex + '00';
+                const authResult2 =
+                    TronWeb.utils.transaction.txCheck(transaction);
+                assert.equal(authResult2, false);
+
+            });
+            it(`should withdraw exchange tokens`, async function () {
+                for (let i = 0; i < 2; i++) {
+                    let data;
+                    let param;
+                    if (i === 0) {
+                        data = {
+                        owner_address: tronWeb.defaultAddress.hex,
+                        exchange_id: exchangeId,
+                        token_id: tronWeb.fromUtf8(tokenNames[0]),
+                        quant: 10,
+                        visible:false
+                        }
+                    }else{
+                        data = {
+                            owner_address: tronWeb.defaultAddress.hex,
+                            exchange_id: exchangeId,
+                            token_id: tronWeb.fromUtf8(tokenNames[0]),
+                            quant: 10,
+                            visible: false,
+                            Permission_id: 2
+                        }
+                    }
+
+                    gridtx = await tronWeb.fullNode.request('wallet/exchangewithdraw', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                    if (i === 0) {
+                         param = [exchangeId, tokenNames[0], 10,tronWeb.defaultAddress.hex, {}, gridtx];
+                    }else{
+                         param = [exchangeId, tokenNames[0], 10,tronWeb.defaultAddress.hex, {permissionId: 2 }, gridtx];
+                    }
+                    const transaction = await tronWeb.transactionBuilder.withdrawExchangeTokens(
+                        ...param
+                    );
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                          console.error('withdrawExchangeTokens not equal');
+                          console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                          console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                          console.info('withdrawExchangeTokens goes well');
+                    }
+
+                    const authResult =
+                        TronWeb.utils.transaction.txCheck(transaction);
+                    assert.equal(authResult, true);
+                }
+            });
+        });
+
+    describe.only('#setAccountId()', function () {
+        it(`should set account id accounts[4]`, async function () {
+
+                const ids = ['abcabc110', 'testtest', 'jackieshen110'];
+
+                for (let id of ids) {
+                    let accountId = TronWeb.toHex(id);
+                    data = {
+                        owner_address: accounts.hex[4],
+                        account_id: accountId,
+                        visible: false
+                    }
+                    gridtx = await tronWeb.fullNode.request('wallet/setaccountid', data, 'post');
+                    console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+
+                    const transaction = await tronWeb.transactionBuilder.setAccountId(accountId, accounts.b58[4],{},gridtx);
+                    console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                    if (!_.isEqual(gridtx,transaction)) {
+                         console.error('setAccountId not equal');
+                         console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                         console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                         console.info('setAccountId goes well');
+                    }
+                    const parameter = txPars(transaction);
+                    assert.equal(transaction.txID.length, 64);
+                    assert.equal(parameter.value.account_id, accountId.slice(2));
+                    assert.equal(parameter.value.owner_address, accounts.hex[4]);
+                    assert.equal(parameter.type_url, 'type.googleapis.com/protocol.SetAccountIdContract');
+                }
+            });
+    });
 });
 
 
