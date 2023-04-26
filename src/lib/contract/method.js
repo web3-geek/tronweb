@@ -124,6 +124,7 @@ export default class Method {
             options,
             parameters,
             options.from ? this.tronWeb.address.toHex(options.from) : false,
+            null,
             (err, transaction) => {
                 if (err)
                     return callback(err);
@@ -332,7 +333,7 @@ export default class Method {
                 if(options.size) {
                     params.size = options.size;
                 }
-                
+
                 if (options.resourceNode) {
                     if (/full/i.test(options.resourceNode))
                         params.onlyUnconfirmed = true
