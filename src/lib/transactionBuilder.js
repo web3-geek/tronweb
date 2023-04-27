@@ -71,6 +71,7 @@ function extractHeaderInfo(tx) {
 
 async function createTransaction(tronWeb, type, value, Permission_id, options = {}, transaction) {
     const metaData = await getHeaderInfo(tronWeb.fullNode);
+
     const tx = {
         visible: false,
         txID: '',
@@ -88,6 +89,7 @@ async function createTransaction(tronWeb, type, value, Permission_id, options = 
             ...options,
         },
     };
+
     if (Permission_id) {
         tx.raw_data.contract[0].Permission_id = Permission_id;
     }
@@ -282,7 +284,7 @@ export default class TransactionBuilder {
             .catch(err => callback(err));
     }
 
-    freezeBalance(amount = 0, duration = 3, resource = "BANDWIDTH", address = this.tronWeb.defaultAddress.hex, receiverAddress = undefined, options,mytx, callback = false) {
+    freezeBalance(amount = 0, duration = 3, resource = "BANDWIDTH", address = this.tronWeb.defaultAddress.hex, receiverAddress = undefined, options, mytx, callback = false) {
         if (utils.isFunction(options)) {
             callback = options;
             options = {};
@@ -732,7 +734,6 @@ export default class TransactionBuilder {
             }
         ], callback))
             return;
-
         const data = {
             owner_address: toHex(address)
         }
@@ -1108,7 +1109,9 @@ export default class TransactionBuilder {
                 tx.contract_address = genContractAddress(args.owner_address, tx.txID);
                 return tx;
             })
-            .then(transaction => callback(null, transaction))
+            .then(transaction => {
+                callback(null, transaction);
+            })
             .catch(err => callback(err));
     }
 
@@ -1286,6 +1289,7 @@ export default class TransactionBuilder {
 
             args.function_selector = functionSelector;
             args.parameter = parameters;
+
         }
 
         args.call_value = parseInt(callValue)
@@ -1700,7 +1704,7 @@ export default class TransactionBuilder {
             return;
 
         const data = {
-            account_id: accountId,
+            account_id: fromUtf8(accountId),
             owner_address: toHex(address),
         }
 
@@ -2450,7 +2454,7 @@ export default class TransactionBuilder {
         }
 
         const data = {
-            owner_address: ownerAddress
+            owner_address: toHex(ownerAddress)
         }
         if (ownerPermissions) {
             const _ownerPermissions = deepCopyJson(ownerPermissions);

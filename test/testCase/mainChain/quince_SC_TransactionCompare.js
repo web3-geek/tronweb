@@ -914,7 +914,6 @@ describe('TronWeb.transactionBuilder', function () {
     });
 
     describe("#triggerSmartContractWithFuncABIV2 (V1 input)", async function () {
-
             it('should create or trigger a smart contract with funcABIV2 (V1 input)', async function () {
                 const issuerAddress = accounts.hex[0];
                 const issuerPk = accounts.pks[0];
@@ -1910,7 +1909,7 @@ describe('TronWeb.transactionBuilder', function () {
             });
         });
 
-    describe.only('#setAccountId()', function () {
+    describe('#setAccountId()', function () {
         it(`should set account id accounts[4]`, async function () {
 
                 const ids = ['abcabc110', 'testtest', 'jackieshen110'];
