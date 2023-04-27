@@ -37,12 +37,16 @@ describe('TronWeb.transactionBuilder', function () {
     let account0_hex;
     let tronWeb;
     let emptyAccount;
+    let accounts;
+
 
     before(async function () {
         emptyAccount = await TronWeb.createAccount();
         tronWeb = tronWebBuilder.createInstance();
         account0_hex = "4199401720e0f05456f60abc65fca08696fa698ee0";
         account0_b58 = "TPwXAV3Wm25x26Q6STrFYCDMM4F59UhXL7";
+        await tronWebBuilder.newTestAccountsInMain(29);
+        accounts = await tronWebBuilder.getTestAccountsInMain(29);
 
     });
 
@@ -72,31 +76,86 @@ describe('TronWeb.transactionBuilder', function () {
     });
 
     //freeze v2 is open, old freeze is closed
-    /*describe('#freezebalance()', function() {
+    describe('#freezebalance()', function() {
         it(`should freeze 1 TRX  for default address`, async function () {
-                            data = {
+                            /*data = {
                                         owner_address: tronWeb.defaultAddress.hex,
                                         frozen_balance: 1000000,
                                         frozen_duration: 3,
+                                        receiver_address: accounts.hex[0],
+                                        Permission_id: 2,
+                                        visible: false
                                     };
                             console.log("data:",data);
                             tx1 = await tronWeb.fullNode.request('wallet/freezebalance', data, 'post');
-                            console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+                            console.log('TronGrid ', JSON.stringify(tx1, null, 2));*/
 
-                            param = [tronWeb.defaultAddress.hex, 1000000, 3,{permissionId: 2},tx1];
-                            const tx2 = await tronWeb.transactionBuilder.sendToken(...param);
+                            param = [1000000, 0,'ENERGY', tronWeb.defaultAddress.base58, tronWeb.defaultAddress.base58];
+                            const tx2 = await tronWeb.transactionBuilder.freezeBalance(...param);
                             console.log('TronWeb ',JSON.stringify(tx2, null, 2));
-                            if (!_.isEqual(tx1,tx2)) {
-                                console.error('sendToken not equal');
+                            const result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
+                            console.log('Result ', JSON.stringify(result, null, 2));
+                            while (true) {
+                                                const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
+                                                if (Object.keys(tx).length === 0) {
+                                                    await wait(3);
+                                                    continue;
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+
+                            /*if (!_.isEqual(tx1,tx2)) {
+                                console.error('freezebalance not equal');
                                 console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
                                 console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
                             } else {
-                                console.info('sendToken goes well');
-                            }
+                                console.info('freezebalance goes well');
+                            }*/
         });
-    });*/
+    });
 
-    describe('#freezeBalanceV2()', function () {
+
+    //freeze v2 is open, old freeze is closed
+    describe('#unfreezeBalance()', function() {
+            it(`should freeze 1 TRX  for default address`, async function () {
+                                data = {
+                                            owner_address: tronWeb.defaultAddress.hex,
+                                            resource: 'BANDWIDTH',
+                                            receiver_address: '41DC3B38A9331424275182065422A44FA3B642A67F',
+                                            visible: false
+                                        };
+
+                                console.log("data:",data);
+                                tx1 = await tronWeb.fullNode.request('wallet/unfreezebalance', data, 'post');
+                                console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+
+                                param = ['BANDWIDTH', tronWeb.defaultAddress.base58, 'TW3gc2omYjk3hazrRq6hRWjJaiHfxPV59j', {},tx1];
+                                const tx2 = await tronWeb.transactionBuilder.unfreezeBalance(...param);
+                                console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+                                /*const result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
+                                console.log('Result ', JSON.stringify(result, null, 2));
+                                while (true) {
+                                                    const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
+                                                    if (Object.keys(tx).length === 0) {
+                                                        await wait(3);
+                                                        continue;
+                                                    } else {
+                                                        break;
+                                                    }
+                                                }*/
+
+                                if (!_.isEqual(tx1,tx2)) {
+                                    console.error('freezebalance not equal');
+                                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                                    console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                                } else {
+                                    console.info('freezebalance goes well');
+                                }
+            });
+        });
+
+    describe.only('#freezeBalanceV2()', function () {
         it(`should freezeV2 2 TRX for default address`, async function () {
             data = {
                 owner_address: tronWeb.defaultAddress.hex,
@@ -109,7 +168,7 @@ describe('TronWeb.transactionBuilder', function () {
             tx1 = await tronWeb.fullNode.request('wallet/freezebalancev2', data, 'post');
             console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-            param = [2000000, 'BANDWIDTH', tronWeb.defaultAddress.base58, {permissionId: 2},tx1];
+            param = [10000000000, 'BANDWIDTH', tronWeb.defaultAddress.base58, {permissionId: 2},tx1];
             const tx2 = await tronWeb.transactionBuilder.freezeBalanceV2(...param);
             console.log('TronWeb ',JSON.stringify(tx2, null, 2));
             if (!_.isEqual(tx1,tx2)) {
@@ -118,6 +177,18 @@ describe('TronWeb.transactionBuilder', function () {
                 console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
             } else {
                 console.info('freezeBalanceV2 goes well');
+            }
+            result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
+            console.log("result: ",result);
+            let createInfo
+            while (true) {
+                createInfo = await tronWeb.trx.getTransactionInfo(tx2.txID);
+                if (Object.keys(createInfo).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
             }
         });
     });
@@ -203,6 +274,136 @@ describe('TronWeb.transactionBuilder', function () {
                 });
     });
 
+    describe("#withdrawExpireUnfreeze", async function () {
+            before(async () => {
+                await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'BANDWIDTH', accounts.hex[3]));
+                await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.freezeBalanceV2(500e6, 'ENERGY', accounts.hex[3]));
+                await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.freezeBalanceV2(50e6, 'ENERGY'));
+                await wait(40);
+            })
+
+            it('multisign、normal address', async function () {
+                await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'BANDWIDTH', accounts.hex[3]));
+                await wait(35);
+                let accountBefore1 = await tronWeb.trx.getAccount(accounts.b58[3]);
+                console.log("accountBefore1: ",accountBefore1.unfrozenV2[0].unfreeze_amount)   //9931945444，944260,
+                assert.isTrue(accountBefore1.unfrozenV2[0].unfreeze_amount > 0);
+
+                data = {
+                    owner_address:accounts.hex[3],
+                    visible:false,
+                    Permission_id:2
+                }
+                gridtx = await tronWeb.fullNode.request('wallet/withdrawexpireunfreeze', data, 'post');
+                console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                let transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(accounts.b58[3], {permissionId: 2},gridtx)
+                console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                if (!_.isEqual(gridtx,transaction)) {
+                    console.error('withdrawExpireUnfreeze bandwidth not equal');
+                    console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                } else {
+                    console.info('withdrawExpireUnfreeze bandwidth goes well');
+                }
+
+                let tx = await broadcaster.broadcaster(null, accounts.pks[3], transaction);
+                console.log("tx:"+util.inspect(tx))
+                assert.equal(tx.transaction.txID.length, 64);
+                await wait(30);
+                let parameter = txPars(transaction);
+                assert.equal(parameter.value.owner_address, accounts.hex[3]);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 2);
+                let accountAfter1 = await tronWeb.trx.getAccount(accounts.b58[3]);
+
+                console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))  //"9931945454，944260,"
+                assert.isUndefined(accountAfter1.unfrozenV2);
+
+                await broadcaster.broadcaster(null, accounts.pks[3], await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY', accounts.hex[3]));
+                await wait(35);
+                let accountBefore2 = await tronWeb.trx.getAccount(accounts.b58[3]);
+                console.log("accountBefore2: "+util.inspect(accountBefore2,true,null,true))
+                assert.isTrue(accountBefore2.unfrozenV2[0].unfreeze_amount > 0);
+
+                data = {
+                    owner_address:accounts.hex[3],
+                    visible:false
+                }
+                gridtx = await tronWeb.fullNode.request('wallet/withdrawexpireunfreeze', data, 'post');
+                console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(accounts.hex[3],{},gridtx)
+                console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                if (!_.isEqual(gridtx,transaction)) {
+                    console.error('withdrawExpireUnfreeze energy no permissionId not equal');
+                    console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                } else {
+                    console.info('withdrawExpireUnfreeze energy no permissionId goes well');
+                }
+
+                tx = await broadcaster.broadcaster(null, accounts.pks[3], transaction);
+                console.log("tx:"+util.inspect(tx))
+                assert.equal(tx.transaction.txID.length, 64);
+                await wait(30);
+                parameter = txPars(transaction);
+                assert.equal(parameter.value.owner_address, accounts.hex[3]);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+                let accountAfter2 = await tronWeb.trx.getAccount(accounts.hex[3]);
+                console.log("accountAfter2: "+util.inspect(accountAfter2,true,null,true))
+                assert.isUndefined(accountAfter2.unfrozenV2);
+            })
+
+            it('use default address', async function () {
+                await broadcaster.broadcaster(null, PRIVATE_KEY, await tronWeb.transactionBuilder.unfreezeBalanceV2(10e6, 'ENERGY'));
+                await wait(35);
+                let accountBefore1 = await tronWeb.trx.getAccount();
+                console.log("accountBefore1: "+util.inspect(accountBefore1,true,null,true))
+                assert.isTrue(accountBefore1.unfrozenV2[0].unfreeze_amount > 0);
+                data = {
+                    owner_address:tronWeb.defaultAddress.hex,
+                    visible:false
+                }
+                gridtx = await tronWeb.fullNode.request('wallet/withdrawexpireunfreeze', data, 'post');
+                console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
+                let transaction = await tronWeb.transactionBuilder.withdrawExpireUnfreeze(tronWeb.defaultAddress.hex, {},gridtx)
+                console.log('TronWeb ', JSON.stringify(transaction, null, 2));
+                if (!_.isEqual(gridtx,transaction)) {
+                    console.error('withdrawExpireUnfreeze energy default user not equal');
+                    console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                } else {
+                    console.info('withdrawExpireUnfreeze energy default user goes well');
+                }
+
+                let tx = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+                console.log("tx:"+util.inspect(tx))
+                assert.equal(tx.transaction.txID.length, 64);
+                await wait(30);
+                let parameter = txPars(transaction);
+                assert.equal(parameter.value.owner_address, ADDRESS_HEX);
+                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WithdrawExpireUnfreezeContract');
+                assert.equal(transaction.raw_data.contract[0].Permission_id || 0, 0);
+                let accountAfter1 = await tronWeb.trx.getAccount();
+                console.log("accountAfter1: "+util.inspect(accountAfter1,true,null,true))
+                assert.isUndefined(accountAfter1.unfrozenV2);
+            })
+
+            it('should throw if owner address is invalid', async function () {
+                const params = [
+                    ['ddssddd', {permissionId: 2}],
+                    ['ddssddd']
+                ];
+
+                for (let param of params) {
+                    await assertThrow(
+                        tronWeb.transactionBuilder.withdrawExpireUnfreeze(...param),
+                        'Invalid origin address provided'
+                    )
+                }
+            })
+        });
+
     describe('#createAccount()', function () {
             it(`should createAccount`, async function () {
                         new_acccount = await tronWeb.createAccount()
@@ -256,7 +457,7 @@ describe('TronWeb.transactionBuilder', function () {
                         }
             });
     });
-    //tronweb 报错：TypeError: Cannot create property 'type' on boolean 'false'
+
     describe('#updateAccountPermissions()', function () {
                 it(`updateAccountPermissions to tronWeb.defaultAddress.hex`, async function () {
                             const permissionData = {
@@ -485,7 +686,7 @@ describe('TronWeb.transactionBuilder', function () {
                     });
     });
 
-    describe.only('#updateToken()', function () {
+    describe('#updateToken()', function () {
                 it(`updateToken 1000323 for tronWeb.defaultAddress.hex`, async function () {
                             data = {
                                 owner_address: tronWeb.defaultAddress.hex,
