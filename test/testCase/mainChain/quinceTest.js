@@ -45,12 +45,12 @@ describe('TronWeb.transactionBuilder', function () {
         tronWeb = tronWebBuilder.createInstance();
         account0_hex = "4199401720e0f05456f60abc65fca08696fa698ee0";
         account0_b58 = "TPwXAV3Wm25x26Q6STrFYCDMM4F59UhXL7";
-        await tronWebBuilder.newTestAccountsInMain(29);
-        accounts = await tronWebBuilder.getTestAccountsInMain(29);
+        await tronWebBuilder.newTestAccountsInMain(1);
+        accounts = await tronWebBuilder.getTestAccountsInMain(1);
 
     });
 
-    describe('#sendTrx()', function () {
+    describe.only('#sendTrx()', function () {
             it(`should send 10 trx from default address to account0_b58`, async function () {
                 data = {
                             //owner_address: this.tronWeb.defaultAddress.base58,
@@ -72,11 +72,31 @@ describe('TronWeb.transactionBuilder', function () {
                 } else {
                     console.info('sendTrx goes well');
                 }
+
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600);
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                const note = "Sending money to Bill.";
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note);
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, accounts.pks[6], transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                                        continue;
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                console.log("111111");
+
             });
     });
 
     //freeze v2 is open, old freeze is closed
-    describe.only('#freezebalance()', function() {
+    describe('#freezebalance()', function() {
         it(`should freeze 1 TRX  for default address`, async function () {
                             param = [1000000, 0,'ENERGY', accounts.hex[0], accounts.hex[0]];
                             const tx2 = await tronWeb.transactionBuilder.freezeBalance(...param);
