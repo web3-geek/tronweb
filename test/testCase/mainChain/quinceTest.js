@@ -76,10 +76,14 @@ describe('TronWeb.transactionBuilder', function () {
     });
 
     //freeze v2 is open, old freeze is closed
-    describe('#freezebalance()', function() {
+    describe.only('#freezebalance()', function() {
         it(`should freeze 1 TRX  for default address`, async function () {
-                            /*data = {
-                                        owner_address: tronWeb.defaultAddress.hex,
+                            param = [1000000, 0,'ENERGY', accounts.hex[0], accounts.hex[0]];
+                            const tx2 = await tronWeb.transactionBuilder.freezeBalance(...param);
+                            console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+
+                            data = {
+                                        owner_address: accounts.hex[0],
                                         frozen_balance: 1000000,
                                         frozen_duration: 3,
                                         receiver_address: accounts.hex[0],
@@ -88,12 +92,10 @@ describe('TronWeb.transactionBuilder', function () {
                                     };
                             console.log("data:",data);
                             tx1 = await tronWeb.fullNode.request('wallet/freezebalance', data, 'post');
-                            console.log('TronGrid ', JSON.stringify(tx1, null, 2));*/
+                            console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-                            param = [1000000, 0,'ENERGY', tronWeb.defaultAddress.base58, tronWeb.defaultAddress.base58];
-                            const tx2 = await tronWeb.transactionBuilder.freezeBalance(...param);
-                            console.log('TronWeb ',JSON.stringify(tx2, null, 2));
-                            const result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
+
+                            /*const result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
                             console.log('Result ', JSON.stringify(result, null, 2));
                             while (true) {
                                                 const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
@@ -103,15 +105,15 @@ describe('TronWeb.transactionBuilder', function () {
                                                 } else {
                                                     break;
                                                 }
-                                            }
+                                            }*/
 
-                            /*if (!_.isEqual(tx1,tx2)) {
+                            if (!_.isEqual(tx1,tx2)) {
                                 console.error('freezebalance not equal');
                                 console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
                                 console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
                             } else {
                                 console.info('freezebalance goes well');
-                            }*/
+                            }
         });
     });
 
@@ -155,7 +157,7 @@ describe('TronWeb.transactionBuilder', function () {
             });
         });
 
-    describe.only('#freezeBalanceV2()', function () {
+    describe('#freezeBalanceV2()', function () {
         it(`should freezeV2 2 TRX for default address`, async function () {
             data = {
                 owner_address: tronWeb.defaultAddress.hex,

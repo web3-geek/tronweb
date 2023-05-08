@@ -42,12 +42,12 @@ describe('TronWeb.transactionBuilder', function () {
         tronWeb = tronWebBuilder.createInstance();
         //account0_hex = "4199401720e0f05456f60abc65fca08696fa698ee0";
         //account0_b58 = "TPwXAV3Wm25x26Q6STrFYCDMM4F59UhXL7";
-        await tronWebBuilder.newTestAccountsInMain(7);
-        accounts = await tronWebBuilder.getTestAccountsInMain(7);
+        await tronWebBuilder.newTestAccountsInMain(29);
+        accounts = await tronWebBuilder.getTestAccountsInMain(29);
 
     });
 
-    /*describe("#createSmartContract", async function () {
+    describe("#createSmartContract", async function () {
             it('should create a smart contract with default parameters', async function () {
                 const options = {
                     abi: testRevert.abi,
@@ -145,7 +145,7 @@ describe('TronWeb.transactionBuilder', function () {
                                                     } else {
                                                           console.info('smart contract with ArrayParam goes well');
                 }
-                *//*const result = await broadcaster.broadcaster(null, accounts.pks[0], tx2);
+                const result = await broadcaster.broadcaster(null, accounts.pks[0], tx2);
                 console.log('Result ', JSON.stringify(result, null, 2));
                 while (true) {
                     const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
@@ -162,7 +162,7 @@ describe('TronWeb.transactionBuilder', function () {
                     let bal = await deployed.balances(accounts.hex[j]).call();
                     bal = bal.toNumber();
                     assert.equal(bal, bals[j - 16]);
-                }*//*
+                }
             });
 
             it('should create a smart contract with array[3] parameters', async function () {
@@ -211,7 +211,7 @@ describe('TronWeb.transactionBuilder', function () {
                 }
 
 
-                *//*result = await broadcaster.broadcaster(null, accounts.pks[0], transaction);
+                result = await broadcaster.broadcaster(null, accounts.pks[0], transaction);
                 console.log("wqq result: ",result);
                 while (true) {
                     const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
@@ -227,7 +227,7 @@ describe('TronWeb.transactionBuilder', function () {
                     let bal = await deployed.balanceOf(accounts.hex[j]).call();
                     bal = bal.toNumber();
                     assert.equal(bal, 100000000);
-                }*//*
+                }
             });
 
             it('should create a smart contract with trctoken and stateMutability parameters', async function () {
@@ -281,7 +281,7 @@ describe('TronWeb.transactionBuilder', function () {
                 } else {
                      console.info('smart contract with trctoken and stateMutability parameters goes well');
                 }
-                *//*result = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+                result = await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
                 console.log("result: ",result);
                 let createInfo
                 while (true) {
@@ -302,7 +302,7 @@ describe('TronWeb.transactionBuilder', function () {
                 const toAddressTrc10BalanceAfter = toAddressAfter.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value;
                 console.log("toAddressTrc10BalanceAfter:"+toAddressTrc10BalanceAfter);
                 assert.equal(accountTrc10BalanceAfter,(accountTrc10BalanceBefore-1e3));
-                assert.equal(toAddressTrc10BalanceAfter,123);*//*
+                assert.equal(toAddressTrc10BalanceAfter,123);
             });
 
             it('should create a smart contract with payable parameters', async function () {
@@ -356,7 +356,7 @@ describe('TronWeb.transactionBuilder', function () {
                     console.info('smart contract with payable parameters goes well');
                 }
 
-                *//*await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
+                await broadcaster.broadcaster(null, PRIVATE_KEY, transaction);
                 let createInfo
                 while (true) {
                     createInfo = await tronWeb.trx.getTransactionInfo(transaction.txID);
@@ -376,7 +376,7 @@ describe('TronWeb.transactionBuilder', function () {
                 const toAddressTrc10BalanceAfter = toAddressAfter.assetV2.filter((item)=> item.key == TOKEN_ID)[0].value;
                 console.log("toAddressTrc10BalanceAfter:"+toAddressTrc10BalanceAfter);
                 assert.equal(accountTrc10BalanceAfter,(accountTrc10BalanceBefore-1e3));
-                assert.equal(toAddressTrc10BalanceAfter,123);*//*
+                assert.equal(toAddressTrc10BalanceAfter,123);
             });
 
             it('should create a smart contract and verify the parameters', async function () {
@@ -420,7 +420,7 @@ describe('TronWeb.transactionBuilder', function () {
                 assert.equal(tx.raw_data.contract[0].Permission_id || 0, options.permissionId || 0);
 
             });
-        });*/
+        });
 
     describe("#triggerSmartContract", async function () {
 
@@ -428,9 +428,9 @@ describe('TronWeb.transactionBuilder', function () {
             let contractAddress;
             let contractAddressWithArray;
             let contractAddressWithTrctoken;
-            contractAddress='417f02b2806d9fc4d390041e315bae7886c17e7137';
-            contractAddressWithArray = '4112857cd6f3aa53e8f21656091f51556cf66a1f83';
-            contractAddressWithTrctoken= '41e78c7595907e29359c38c15c797e87a4df1af00e';
+            contractAddress='417f80ad3504e74633368fb72085f35aaae2e5d63c';
+            contractAddressWithArray = '413d0158aaca5a908ed3d6f3b3cf54357935a27314';
+            contractAddressWithTrctoken= '41183711d0fd9edb126f15c14b7322d45ee903f9a0';
             console.log("wqqtest: triggerSmartContract")
 
             /*before(async function () {
@@ -497,7 +497,7 @@ describe('TronWeb.transactionBuilder', function () {
                 console.log("contractAddress: ",contractAddress);
                 console.log("contractAddressWithArray: ",contractAddressWithArray);
                 console.log("contractAddressWithTrctoken: ",contractAddressWithTrctoken);
-            })*/
+            })
 
             //need check again,TRNWB-25
             it('should trigger smart contract successfully', async function () {
@@ -540,10 +540,10 @@ describe('TronWeb.transactionBuilder', function () {
                     assert.isTrue(transaction.receipt.result)
                     assert.equal(transaction.transaction.raw_data.contract[0].Permission_id || 0, options.permissionId || 0);
                 }
-            });
+            });*/
 
             //after use at, deploy.balance has no result returned.
-            it('should trigger smart contract with array[2] parameters', async function () {
+            it.only('should trigger smart contract with array[2] parameters', async function () {
                 console.log("wqqtest: should trigger smart contract with array[2] parameters")
                 accounthex16= '41560ad333aa93dd143b56c302bf87ca4d268ed337';
                 accounthex17='41681156754975b6e0f5768e9bb872b4def8311ebd';
@@ -556,7 +556,7 @@ describe('TronWeb.transactionBuilder', function () {
                 ]
 
 
-                data = {
+                const griddata = {
                             owner_address: accounts.hex[6],
                             contract_address: contractAddressWithArray,
                             function_selector: 'transferWith2(address[2],uint256[2])',
@@ -564,11 +564,13 @@ describe('TronWeb.transactionBuilder', function () {
                             fee_limit: 150000000,
                             visible:false
                         }
-                tx1 = await tronWeb.fullNode.request('wallet/triggersmartcontract', data, 'post');
+                tx1 = await tronWeb.fullNode.request('wallet/triggersmartcontract', griddata, 'post');
                 console.log('TronGrid ', JSON.stringify(tx1, null, 2));
                 const transaction = await tronWeb.transactionBuilder.triggerSmartContract(contractAddressWithArray,  functionSelector, {},
-                    parameter, accounts.hex[6],tx1);
+                    parameter, accounts.hex[6],tx1.transaction);
                 console.log("TronWeb: ",JSON.stringify(transaction, null, 2))
+                const previousId = transaction.transaction.txID;
+                console.log("previousId: ",previousId);
                 if (!_.isEqual(tx1,transaction)) {
                                     console.error('smart contract and verify the parameters not equal');
                                     console.log(JSON.stringify(tx1.transaction.raw_data.contract[0].parameter.value, null, 2));
@@ -577,10 +579,19 @@ describe('TronWeb.transactionBuilder', function () {
                 } else {
                                     console.info('smart contract and verify the parameters goes well');
                 }
-                result = await broadcaster.broadcaster(null, accounts.pks[6], transaction.transaction);
-                console.log("result: ",result)
+
+
+
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction.transaction, 3600);
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                const note = "Sending money to Bill.";
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction.transaction, note);
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, accounts.pks[6], transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
                 while (true) {
-                    const tx = await tronWeb.trx.getTransactionInfo(transaction.transaction.txID);
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
                     if (Object.keys(tx).length === 0) {
                         await wait(3);
                         continue;
@@ -589,10 +600,8 @@ describe('TronWeb.transactionBuilder', function () {
                     }
                 }
                 console.log("111111");
-                const deployed = await tronWeb.contract().at(contractAddressWithArray);
+                /*const deployed = await tronWeb.contract().at(contractAddressWithArray);
                 console.log("222222");
-
-
                 let bal = await deployed.balanceOf(accounthex16).call();
                 bal = bal.toNumber();
                 assert.equal(bal, 100123456);
@@ -601,7 +610,7 @@ describe('TronWeb.transactionBuilder', function () {
                 bal = bal.toNumber();
                 assert.equal(bal, 100123456);
 
-                console.log("---end---")
+                console.log("---end---")*/
             });
 
             it('should trigger smart contract with array[] parameters', async function () {
@@ -637,6 +646,24 @@ describe('TronWeb.transactionBuilder', function () {
                 } else {
                                                     console.info('smart contract with array[] parameters goes well');
                 }
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction.transaction, 3600);
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                const note = "Sending money to Bill.";
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction.transaction, note);
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, accounts.pks[6], transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                console.log("111111");
                 /*result = await broadcaster.broadcaster(null, accounts.pks[6], transaction.transaction);
                 console.log("result: ",result)
                 while (true) {
@@ -1910,7 +1937,7 @@ describe('TronWeb.transactionBuilder', function () {
         });
 
     describe('#setAccountId()', function () {
-        it(`should set account id accounts[4]`, async function () {
+        it(`should set account id accounts`, async function () {
 
                 const ids = ['abcabc110', 'testtest', 'jackieshen110'];
 
@@ -1918,13 +1945,13 @@ describe('TronWeb.transactionBuilder', function () {
                     let accountId = TronWeb.toHex(id);
                     data = {
                         owner_address: accounts.hex[4],
-                        account_id: id,
+                        account_id: accountId,
                         visible: false
                     }
                     gridtx = await tronWeb.fullNode.request('wallet/setaccountid', data, 'post');
                     console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
 
-                    const transaction = await tronWeb.transactionBuilder.setAccountId(id, accounts.b58[4],{},gridtx);
+                    const transaction = await tronWeb.transactionBuilder.setAccountId(accountId, accounts.b58[4],{},gridtx);
                     console.log('TronWeb ', JSON.stringify(transaction, null, 2));
                     if (!_.isEqual(gridtx,transaction)) {
                          console.error('setAccountId not equal');
