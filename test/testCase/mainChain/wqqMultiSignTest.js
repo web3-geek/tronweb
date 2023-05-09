@@ -1972,7 +1972,7 @@ describe('TronWeb.transactionBuilder', function () {
             const tx1 = await tronWeb.fullNode.request('wallet/accountpermissionupdate', data, 'post');
             console.log('java-tron ', JSON.stringify(tx1, null, 2));
             const tx2 = await tronWeb.transactionBuilder.updateAccountPermissions(
-                accounts.hex[1],
+                accounts.b58[1],
                 ownerPermission,
                 null,
                 [activePermission],
