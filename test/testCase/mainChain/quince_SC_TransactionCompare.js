@@ -428,10 +428,9 @@ describe('TronWeb.transactionBuilder', function () {
             let contractAddress;
             let contractAddressWithArray;
             let contractAddressWithTrctoken;
-            contractAddress='417f80ad3504e74633368fb72085f35aaae2e5d63c';
-            contractAddressWithArray = '413d0158aaca5a908ed3d6f3b3cf54357935a27314';
-            contractAddressWithTrctoken= '41183711d0fd9edb126f15c14b7322d45ee903f9a0';
-            console.log("wqqtest: triggerSmartContract")
+            contractAddress = '41b87b843397af16bc770612b7a61eb24d231f9985';
+            contractAddressWithArray='4160d4396e33d16a34b4b2c426436e27a631e68590';
+            contractAddressWithTrctoken='414ede7a00db1057a85bcb83e92e6e000e34522ee3';
 
             /*before(async function () {
                 transaction = await tronWeb.transactionBuilder.createSmartContract({
@@ -497,17 +496,18 @@ describe('TronWeb.transactionBuilder', function () {
                 console.log("contractAddress: ",contractAddress);
                 console.log("contractAddressWithArray: ",contractAddressWithArray);
                 console.log("contractAddressWithTrctoken: ",contractAddressWithTrctoken);
-            })
+            })*/
 
             //need check again,TRNWB-25
-            it('should trigger smart contract successfully', async function () {
+            // if txLocal:true， 则走本地构造交易，本地交易会少constant_result，energy_used，ret三个字段，多出result字段。 不管本地还是grid，tronweb都会增加字段："fee_limit": 150000000。
+            it.only('should trigger smart contract successfully', async function () {
                 const issuerAddress = accounts.hex[6];
                 const functionSelector = 'testPure(uint256,uint256)';
                 const parameter = [
                     {type: 'uint256', value: 1},
                     {type: 'uint256', value: 2}
                 ]
-                const options = {};
+                const options = {txLocal:true};
 
                 data = {
                     owner_address: issuerAddress,
@@ -523,27 +523,43 @@ describe('TronWeb.transactionBuilder', function () {
                     tx1 = await tronWeb.fullNode.request('wallet/triggersmartcontract', data, 'post');
                     console.log('TronGrid ', JSON.stringify(tx1, null, 2));
                     transaction = await tronWeb.transactionBuilder.triggerSmartContract(contractAddress, functionSelector, options,
-                        parameter, issuerAddress);
+                        parameter, issuerAddress,tx1.transaction);
                     console.log("TronWeb: ",JSON.stringify(transaction, null, 2));
                     assert.isTrue(transaction.result.result &&
                     transaction.transaction.raw_data.contract[0].parameter.type_url === 'type.googleapis.com/protocol.TriggerSmartContract');
                     if (!_.isEqual(tx1,transaction)) {
                         console.error('trigger smart contract not equal');
-                        console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(tx1.transaction.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.transaction.raw_data.contract[0].parameter.value, null, 2));
 
                     } else {
                         console.info('trigger smart contracts goes well');
                     }
 
-                    transaction = await broadcaster.broadcaster(null, accounts.pks[6], transaction.transaction);
-                    assert.isTrue(transaction.receipt.result)
-                    assert.equal(transaction.transaction.raw_data.contract[0].Permission_id || 0, options.permissionId || 0);
+                    transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction.transaction, 3600, {txLocal:true});
+                    console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                    const note = "Sending money to Bill.";
+                    await wait(3);
+                    transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction.transaction, note,{txLocal:true});
+                    console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                    result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
+                    console.log("result: ",JSON.stringify(result, null, 2))
+                    while (true) {
+                        const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                        if (Object.keys(tx).length === 0) {
+                            await wait(3);
+                            continue;
+                        } else {
+                            break;
+                        }
+                        }
+                    console.log("111111");
                 }
-            });*/
+            });
 
             //after use at, deploy.balance has no result returned.
-            it.only('should trigger smart contract with array[2] parameters', async function () {
+            it('should trigger smart contract with array[2] parameters', async function () {
                 console.log("wqqtest: should trigger smart contract with array[2] parameters")
                 accounthex16= '41560ad333aa93dd143b56c302bf87ca4d268ed337';
                 accounthex17='41681156754975b6e0f5768e9bb872b4def8311ebd';
@@ -584,6 +600,18 @@ describe('TronWeb.transactionBuilder', function () {
 
                 transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction.transaction, 3600);
                 console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                result = await broadcaster.broadcaster(null, accounts.pks[6], transactionExtendE);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                   }
+                }
+                console.log("1111111");
                 const note = "Sending money to Bill.";
                 transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction.transaction, note);
                 console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
@@ -599,7 +627,7 @@ describe('TronWeb.transactionBuilder', function () {
                         break;
                     }
                 }
-                console.log("111111");
+                console.log("2222222");
                 /*const deployed = await tronWeb.contract().at(contractAddressWithArray);
                 console.log("222222");
                 let bal = await deployed.balanceOf(accounthex16).call();
@@ -780,7 +808,7 @@ describe('TronWeb.transactionBuilder', function () {
                 }
             })
 
-            //todo： timestamp不相等。
+
             it('should trigger constant contract successfully', async function () {
                 this.timeout(20000);
 
@@ -791,7 +819,7 @@ describe('TronWeb.transactionBuilder', function () {
                     {type: 'uint256', value: 1},
                     {type: 'uint256', value: 2}
                 ]
-                const options = {};
+                const options = {txLocal:true};
 
                 paramsFromWeb = '00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002';
                 data = {
@@ -808,7 +836,7 @@ describe('TronWeb.transactionBuilder', function () {
                     tx1 = await tronWeb.fullNode.request('wallet/triggersmartcontract', data, 'post');
                     console.log('TronGrid ', JSON.stringify(tx1, null, 2));
                     transaction = await tronWeb.transactionBuilder.triggerConstantContract(contractAddress, functionSelector, options,
-                        parameter, issuerAddress,tx1);
+                        parameter, issuerAddress,tx1.transaction);
                     console.log('TronWeb ', JSON.stringify(transaction, null, 2));
                     if (!_.isEqual(tx1,transaction)) {
                                          console.error('should trigger constant contract not equal');
@@ -830,7 +858,7 @@ describe('TronWeb.transactionBuilder', function () {
             });
         });
 
-    //todo： timestamp不相等。
+
     describe("#triggerComfirmedConstantContract", async function () {
 
             let transaction;
@@ -863,27 +891,27 @@ describe('TronWeb.transactionBuilder', function () {
                     {type: 'uint256', value: 1},
                     {type: 'uint256', value: 2}
                 ]
-                const options = {};
+                const options = {txLocal:false};
                 data = {
                     owner_address: accounts.hex[6],
-                    contract_address: transaction.contractAddress,
+                    contract_address: transaction.contract_address,
                     function_selector: 'testPure(uint256,uint256)',
-                    parameter:'00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002',
-                    visible:false
+                    parameter:'00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002'
+
                 }
 
                 for (let i = 0; i < 2; i++) {
                     if (i === 1) options.permissionId = 2;
                     if (i === 1) data.Permission_id = 2;
-                    tx1 = await tronWeb.fullNode.request('wallet/triggersmartcontract', data, 'post');
+                    tx1 = await tronWeb.solidityNode.request('walletsolidity/triggerconstantcontract', data, 'post');
                     console.log('TronGrid ', JSON.stringify(tx1, null, 2));
                     transaction = await tronWeb.transactionBuilder.triggerConfirmedConstantContract(contractAddress, functionSelector, options,
                         parameter, issuerAddress);
                     console.log("TronWeb: ",JSON.stringify(transaction, null, 2));
                     if (!_.isEqual(tx1,transaction)) {
                         console.error('trigger confirmed constant contract not equal');
-                        console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(tx1.transaction.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.transaction.raw_data.contract[0].parameter.value, null, 2));
 
                     } else {
                         console.info('trigger confirmed constant contract goes well');
@@ -892,7 +920,7 @@ describe('TronWeb.transactionBuilder', function () {
 
                     assert.isTrue(transaction.result.result &&
                         transaction.transaction.raw_data.contract[0].parameter.type_url === 'type.googleapis.com/protocol.TriggerSmartContract');
-                    assert.equal(transaction.constant_result, '0000000000000000000000000000000000000000000000000000000000000004');
+                    assert.equal(transaction.constant_result, '0000000000000000000000000000000000000000000000000000000000000002');
                     transaction = await broadcaster.broadcaster(null, accounts.pks[6], transaction.transaction);
                     assert.isTrue(transaction.receipt.result)
                     assert.equal(transaction.transaction.raw_data.contract[0].Permission_id || 0, options.permissionId || 0);

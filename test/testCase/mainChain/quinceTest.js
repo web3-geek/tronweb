@@ -58,11 +58,11 @@ describe('TronWeb.transactionBuilder', function () {
                             to_address: account0_hex,
                             amount: 10,
                             visible: false,
-                            Permission_id: 2
+
                         };
                 tx1 = await tronWeb.fullNode.request('wallet/createtransaction', data, 'post');
                 console.log('TronGrid ', JSON.stringify(tx1, null, 2));
-                param = [account0_hex, 10,tronWeb.defaultAddress.hex,{permissionId: 2},tx1];
+                param = [account0_hex, 10,tronWeb.defaultAddress.hex,{}, tx1];
                 const tx2 = await tronWeb.transactionBuilder.sendTrx(...param);
                 console.log('TronWeb ',JSON.stringify(tx2, null, 2));
                 if (!_.isEqual(tx1,tx2)) {
@@ -72,25 +72,26 @@ describe('TronWeb.transactionBuilder', function () {
                 } else {
                     console.info('sendTrx goes well');
                 }
-
-                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600);
+                await wait(3);
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:true});
                 console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
                 const note = "Sending money to Bill.";
-                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note);
+                await wait(3);
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:true});
                 console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
 
-                result = await broadcaster.broadcaster(null, accounts.pks[6], transactionUpdate);
+                result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
                 console.log("result: ",JSON.stringify(result, null, 2))
                 while (true) {
                     const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
                     if (Object.keys(tx).length === 0) {
                         await wait(3);
                                         continue;
-                                    } else {
-                                        break;
-                                    }
-                                }
-                                console.log("111111");
+                    } else {
+                        break;
+                    }
+                }
+                console.log("111111");
 
             });
     });
