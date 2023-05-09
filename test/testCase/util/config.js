@@ -35,6 +35,10 @@ module.exports = {
     WITNESS_KEY: '369F095838EB6EED45D4F6312AF962D5B9DE52927DA9F04174EE49F9AF54BC77',
     WITNESS_ACCOUNT2: 'TT1smsmhxype64boboU8xTuNZVCKP1w6qT',
     WITNESS_KEY2: '9fd8e129de181ea44c6129f727a6871440169568ade002943ead0e7a16d8edac',
+    // freezebalance
+    ACTIVE_PERMISSION_OPERATIONS: '7fff1fc0037e0300000000000000000000000000000000000000000000000000',
+    // freezebalanceV2
+    // ACTIVE_PERMISSION_OPERATIONS: '7fff1fc0037efb07000000000000000000000000000000000000000000000000',
     UPDATED_TEST_TOKEN_OPTIONS: {
         description: 'Very useless utility token',
         url: 'https://none.example.com',
@@ -85,7 +89,7 @@ rH4WZ2xKqbSvQNcyrdAP5TUORcJWc7zg6GCkRJdjXPOqk78n4tDmh2jtG826DAwY
             description: 'Useless utility token',
             url: `https://example-${rnd}.com/`,
             totalSupply: 100000000,
-            saleEnd: Date.now() + 60000, // 1 minute
+            saleEnd: Date.now() + 2592000000, // 1 minute
             frozenAmount: 5,
             frozenDuration: 1,
             trxRatio: 10,
