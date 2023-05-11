@@ -112,7 +112,7 @@ async function createTransaction(tronWeb, type, value, Permission_id, options = 
             //...metaData,  wqq modified
             ...(transaction ? extractHeaderInfo(transaction) : metaData),
             ...options,
-        },
+        }
     };
 
     if (Permission_id) {
@@ -1177,7 +1177,6 @@ export default class TransactionBuilder {
         mytx,
         callback = false
     ) {
-
         if (utils.isFunction(issuerAddress)) {
             callback = issuerAddress;
             issuerAddress = this.tronWeb.defaultAddress.hex;
@@ -1367,7 +1366,8 @@ export default class TransactionBuilder {
                 options.permissionId,
                 {
                     fee_limit: args.fee_limit,
-                }
+                },
+               mytx
             ).then(transaction => {
                 callback(null, {
                     result: {
@@ -2538,7 +2538,7 @@ export default class TransactionBuilder {
             }).catch((err) => callback('Error generating a new transaction id.'));
             return;
         }
-        
+
         this.tronWeb.fullNode
             .request(
                 'wallet/getsignweight',

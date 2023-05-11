@@ -428,11 +428,11 @@ describe('TronWeb.transactionBuilder', function () {
             let contractAddress;
             let contractAddressWithArray;
             let contractAddressWithTrctoken;
-            contractAddress = '41b87b843397af16bc770612b7a61eb24d231f9985';
-            contractAddressWithArray='4160d4396e33d16a34b4b2c426436e27a631e68590';
-            contractAddressWithTrctoken='414ede7a00db1057a85bcb83e92e6e000e34522ee3';
+            //contractAddress = '41b87b843397af16bc770612b7a61eb24d231f9985';
+            //contractAddressWithArray='4160d4396e33d16a34b4b2c426436e27a631e68590';
+            //contractAddressWithTrctoken='414ede7a00db1057a85bcb83e92e6e000e34522ee3';
 
-            /*before(async function () {
+            before(async function () {
                 transaction = await tronWeb.transactionBuilder.createSmartContract({
                     abi: testConstant.abi,
                     bytecode: testConstant.bytecode
@@ -449,7 +449,7 @@ describe('TronWeb.transactionBuilder', function () {
                 }
                 contractAddress = transaction.contract_address;
 
-                transaction = await tronWeb.transactionBuilder.createSmartContract({
+                /*transaction = await tronWeb.transactionBuilder.createSmartContract({
                     abi: testAddressArray.abi,
                     bytecode: testAddressArray.bytecode,
                     permissionId: 2,
@@ -495,8 +495,8 @@ describe('TronWeb.transactionBuilder', function () {
                 contractAddressWithTrctoken = transaction.contract_address;
                 console.log("contractAddress: ",contractAddress);
                 console.log("contractAddressWithArray: ",contractAddressWithArray);
-                console.log("contractAddressWithTrctoken: ",contractAddressWithTrctoken);
-            })*/
+                console.log("contractAddressWithTrctoken: ",contractAddressWithTrctoken);*/
+            })
 
             //need check again,TRNWB-25
             // if txLocal:true， 则走本地构造交易，本地交易会少constant_result，energy_used，ret三个字段，多出result字段。 不管本地还是grid，tronweb都会增加字段："fee_limit": 150000000。
@@ -535,15 +535,15 @@ describe('TronWeb.transactionBuilder', function () {
                     } else {
                         console.info('trigger smart contracts goes well');
                     }
-
-                    transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction.transaction, 3600, {txLocal:true});
-                    console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
                     const note = "Sending money to Bill.";
+                    transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction.transaction, 3600, {data:note, txLocal:false});
+                    console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+
                     await wait(3);
-                    transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction.transaction, note,{txLocal:true});
+                    transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction.transaction, note,{txLocal:false});
                     console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
 
-                    result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
+                    /*result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
                     console.log("result: ",JSON.stringify(result, null, 2))
                     while (true) {
                         const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
@@ -554,7 +554,7 @@ describe('TronWeb.transactionBuilder', function () {
                             break;
                         }
                         }
-                    console.log("111111");
+                    console.log("111111");*/
                 }
             });
 

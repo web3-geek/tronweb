@@ -18,6 +18,7 @@ const assert = chai.assert;
 const _ = require('lodash');
 const TronWeb = tronWebBuilder.TronWeb;
 const {
+    accounts,
     ADDRESS_HEX,
     ADDRESS_BASE58,
     UPDATED_TEST_TOKEN_OPTIONS,
@@ -31,6 +32,14 @@ const {
 } = require('../util/config');
 const { equals, getValues } = require('../util/testUtils');
 
+function randomString(e) {
+  e = e || 32;
+  var t = "ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678",
+  a = t.length,
+  n = "";
+  for (i = 0; i < e; i++) n += t.charAt(Math.floor(Math.random() * a));
+  return n
+}
 
 describe('TronWeb.transactionBuilder', function () {
 
@@ -38,20 +47,17 @@ describe('TronWeb.transactionBuilder', function () {
     let account0_hex;
     let tronWeb;
     let emptyAccount;
-    let accounts;
     let isAllowSameTokenNameApproved
 
     before(async function () {
-        emptyAccount = await TronWeb.createAccount();
+        //emptyAccount = await TronWeb.createAccount();
         tronWeb = tronWebBuilder.createInstance();
-        account0_hex = "4199401720e0f05456f60abc65fca08696fa698ee0";
-        account0_b58 = "TPwXAV3Wm25x26Q6STrFYCDMM4F59UhXL7";
+        account0_hex = accounts.hex[0];
+        account0_b58 = accounts.b58[0];
         await tronWebBuilder.newTestAccountsInMain(8);
-        accounts = await tronWebBuilder.getTestAccountsInMain(8);
         isAllowSameTokenNameApproved = await isProposalApproved(tronWeb, 'getAllowSameTokenName')
-        await wait(30);
     });
-
+    //
     describe('#sendTrx()', function () {
             it(`should send 10 trx from default address to account0_b58`, async function () {
                 data = {
@@ -69,9 +75,10 @@ describe('TronWeb.transactionBuilder', function () {
                 console.log('TronWeb ',JSON.stringify(tx2, null, 2));
                 if (!_.isEqual(tx1,tx2)) {
                     console.error('sendTrx not equal');
-                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
                     console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
                 } else {
+                    assert.equal(tx1, tx2);
                     console.info('sendTrx goes well');
                 }
                 await wait(3);
@@ -81,13 +88,13 @@ describe('TronWeb.transactionBuilder', function () {
                 console.log("result: ",JSON.stringify(result, null, 2));
 
                 while (true) {
-                                    const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
-                                    if (Object.keys(tx).length === 0) {
-                                        await wait(3);
-                                                        continue;
-                                    } else {
-                                        break;
-                                    }
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
 
                 const note = "Sending money to Bill.";
@@ -106,7 +113,7 @@ describe('TronWeb.transactionBuilder', function () {
                         break;
                     }
                 }
-                console.log("111111");
+                console.log("SendTrx Success!");
 
             });
     });
@@ -114,85 +121,128 @@ describe('TronWeb.transactionBuilder', function () {
     //freeze v2 is open, old freeze is closed
     describe('#freezebalance()', function() {
         it(`should freeze 1 TRX  for default address`, async function () {
-                            param = [1000000, 0,'ENERGY', accounts.hex[0], accounts.hex[0]];
-                            const tx2 = await tronWeb.transactionBuilder.freezeBalance(...param);
-                            console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+            data = {
+                        owner_address: accounts.hex[0],
+                        frozen_balance: 1000000,
+                        frozen_duration: 3,
+                        //receiver_address: accounts.hex[0],
+                        resource: 'BANDWIDTH',
+                        visible: false
+                    };
+            tx1 = await tronWeb.fullNode.request('wallet/freezebalance', data, 'post');
+            console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-                            data = {
-                                        owner_address: accounts.hex[0],
-                                        frozen_balance: 1000000,
-                                        frozen_duration: 3,
-                                        receiver_address: accounts.hex[0],
-                                        Permission_id: 2,
-                                        visible: false
-                                    };
-                            console.log("data:",data);
-                            tx1 = await tronWeb.fullNode.request('wallet/freezebalance', data, 'post');
-                            console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+            param = [1000000, 3,'BANDWIDTH', accounts.hex[0], accounts.hex[0],{},tx1];
+            const tx2 = await tronWeb.transactionBuilder.freezeBalance(...param);
+            console.log('TronWeb ',JSON.stringify(tx2, null, 2));
 
+            if (!_.isEqual(tx1,tx2)) {
+                console.error('freezebalance not equal');
+                console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+            } else {
+                console.info('freezebalance goes well');
+            }
+            await wait(3);
+            transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:true});
+            console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+            result = await broadcaster.broadcaster(null, accounts.pks[0], transactionExtendE);
+            console.log("result: ",JSON.stringify(result, null, 2));
 
-                            /*const result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
-                            console.log('Result ', JSON.stringify(result, null, 2));
-                            while (true) {
-                                                const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
-                                                if (Object.keys(tx).length === 0) {
-                                                    await wait(3);
-                                                    continue;
-                                                } else {
-                                                    break;
-                                                }
-                                            }*/
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
+            }
 
-                            if (!_.isEqual(tx1,tx2)) {
-                                console.error('freezebalance not equal');
-                                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                                console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                            } else {
-                                console.info('freezebalance goes well');
-                            }
+            const note = "Sending money to Bill.";
+            await wait(3);
+            transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:false});
+            console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+            result = await broadcaster.broadcaster(null, accounts.pks[0], transactionUpdate);
+            console.log("result: ",JSON.stringify(result, null, 2))
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                                    continue;
+                } else {
+                    break;
+                }
+            }
+            console.log("freezebalance Success!");
         });
     });
 
-
-    //freeze v2 is open, old freeze is closed
+    // TODO this is not fully testable because the minimum time before unfreezing is 3 days
     describe('#unfreezeBalance()', function() {
             it(`should freeze 1 TRX  for default address`, async function () {
-                                data = {
-                                            owner_address: tronWeb.defaultAddress.hex,
-                                            resource: 'BANDWIDTH',
-                                            receiver_address: '41DC3B38A9331424275182065422A44FA3B642A67F',
-                                            visible: false
-                                        };
+                data = {
+                            owner_address: tronWeb.defaultAddress.hex,
+                            resource: 'BANDWIDTH',
+                            receiver_address: '41DC3B38A9331424275182065422A44FA3B642A67F',
+                            visible: false
+                        };
 
-                                console.log("data:",data);
-                                tx1 = await tronWeb.fullNode.request('wallet/unfreezebalance', data, 'post');
-                                console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+                console.log("data:",data);
+                tx1 = await tronWeb.fullNode.request('wallet/unfreezebalance', data, 'post');
+                console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-                                param = ['BANDWIDTH', tronWeb.defaultAddress.base58, 'TW3gc2omYjk3hazrRq6hRWjJaiHfxPV59j', {},tx1];
-                                const tx2 = await tronWeb.transactionBuilder.unfreezeBalance(...param);
-                                console.log('TronWeb ',JSON.stringify(tx2, null, 2));
-                                /*const result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
-                                console.log('Result ', JSON.stringify(result, null, 2));
-                                while (true) {
-                                                    const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
-                                                    if (Object.keys(tx).length === 0) {
-                                                        await wait(3);
-                                                        continue;
-                                                    } else {
-                                                        break;
-                                                    }
-                                                }*/
+                param = ['BANDWIDTH', tronWeb.defaultAddress.base58, 'TW3gc2omYjk3hazrRq6hRWjJaiHfxPV59j', {},tx1];
+                const tx2 = await tronWeb.transactionBuilder.unfreezeBalance(...param);
+                console.log('TronWeb ',JSON.stringify(tx2, null, 2));
 
-                                if (!_.isEqual(tx1,tx2)) {
-                                    console.error('freezebalance not equal');
-                                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                                    console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                                } else {
-                                    console.info('freezebalance goes well');
-                                }
+                if (!_.isEqual(tx1,tx2)) {
+                    console.error('freezebalance not equal');
+                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                } else {
+                    console.info('freezebalance goes well');
+                }
+
+                await wait(3);
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                result = await broadcaster.broadcaster(null, accounts.pks[0], transactionExtendE);
+                console.log("result: ",JSON.stringify(result, null, 2));
+
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+
+                const note = "Sending money to Bill.";
+                await wait(3);
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:false});
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, accounts.pks[0], transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                console.log("unfreezeBalance Success!");
+
             });
         });
 
+    //freeze v2 is open, old freeze is closed
     describe('#freezeBalanceV2()', function () {
         it(`should freezeV2 2 TRX for default address`, async function () {
             data = {
@@ -211,9 +261,10 @@ describe('TronWeb.transactionBuilder', function () {
             console.log('TronWeb ',JSON.stringify(tx2, null, 2));
             if (!_.isEqual(tx1,tx2)) {
                 console.error('freezeBalanceV2 not equal');
-                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
                 console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
             } else {
+                assert.equal(tx1, tx2);
                 console.info('freezeBalanceV2 goes well');
             }
             result = await broadcaster.broadcaster(null, PRIVATE_KEY, tx2);
@@ -444,127 +495,239 @@ describe('TronWeb.transactionBuilder', function () {
 
     describe('#createAccount()', function () {
             it(`should createAccount`, async function () {
-                        new_acccount = await tronWeb.createAccount()
-                        console.log('new_acccount:', new_acccount.address.hex);
-                        data = {
-                            owner_address: tronWeb.defaultAddress.hex,
-                            account_address: new_acccount.address.hex,
-                            visible: false,
-                            Permission_id: 2
-                        };
-                        console.log("data:",data);
-                        tx1 = await tronWeb.fullNode.request('wallet/createaccount', data, 'post');
-                        console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+                new_acccount = await tronWeb.createAccount()
+                console.log('new_acccount:', new_acccount.address.hex);
+                data = {
+                    owner_address: tronWeb.defaultAddress.hex,
+                    account_address: new_acccount.address.hex,
+                    visible: false,
+                };
+                console.log("data:",data);
+                tx1 = await tronWeb.fullNode.request('wallet/createaccount', data, 'post');
+                console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-                        param = [new_acccount.address.hex, tronWeb.defaultAddress.hex,{permissionId: 2},tx1];
-                        const tx2 = await tronWeb.transactionBuilder.createAccount(...param);
-                        console.log('TronWeb ',JSON.stringify(tx2, null, 2));
-                        if (!_.isEqual(tx1,tx2)) {
-                            console.error('createAccount not equal');
-                            console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                            console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                        } else {
-                            console.info('createAccount goes well');
-                        }
+                param = [new_acccount.address.hex, tronWeb.defaultAddress.hex,{},tx1];
+                const tx2 = await tronWeb.transactionBuilder.createAccount(...param);
+                console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+                if (!_.isEqual(tx1,tx2)) {
+                    console.error('createAccount not equal');
+                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                } else {
+                    console.info('createAccount goes well');
+                }
+                await wait(3);
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionExtendE);
+                console.log("result: ",JSON.stringify(result, null, 2));
+
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                await wait(3);
+                new_acccount = await tronWeb.createAccount()
+
+
+
+                const note = "Sending money to Bill.";
+                param = [new_acccount.address.hex, tronWeb.defaultAddress.hex,{},tx1];
+                const tx3 = await tronWeb.transactionBuilder.createAccount(...param);
+                console.log('TronWeb ',JSON.stringify(tx3, null, 2));
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx3, note,{txLocal:false});
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                console.log("createAccount Success!");
             });
     });
 
-    describe('#updateAccount()', function () {
+    describe.only('#updateAccount()', function () {
             it(`should update Account name for new account`, async function () {
-                        new_acccount = await tronWeb.createAccount();
-                        await tronWeb.trx.sendTrx(new_acccount.address.hex,1000,{privateKey: PRIVATE_KEY});
-                        data = {
-                            owner_address: new_acccount.address.hex,
-                            account_name: tronWeb.fromUtf8("Hello"),
-                            visible: false,
-                            Permission_id: 2
-                        };
-                        console.log("data:",data);
-                        tx1 = await tronWeb.fullNode.request('wallet/updateaccount', data, 'post');
-                        console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+                accountName = randomString(6)
+                new_acccount = await tronWeb.createAccount();
+                await tronWeb.trx.sendTrx(new_acccount.address.hex,1000,{privateKey: PRIVATE_KEY});
+                data = {
+                    owner_address: new_acccount.address.hex,
+                    account_name: tronWeb.fromUtf8(accountName),
+                    visible: false,
+                };
+                console.log("data:",data);
+                tx1 = await tronWeb.fullNode.request('wallet/updateaccount', data, 'post');
+                console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-                        param = ['Hello', new_acccount.address.hex,{permissionId: 2},tx1];
-                        const tx2 = await tronWeb.transactionBuilder.updateAccount(...param);
-                        console.log('TronWeb ',JSON.stringify(tx2, null, 2));
-                        if (!_.isEqual(tx1,tx2)) {
-                            console.error('updateAccount not equal');
-                            console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                            console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                        } else {
-                            console.info('updateAccount goes well');
-                        }
+                param = [accountName, new_acccount.address.hex,{},tx1];
+                const tx2 = await tronWeb.transactionBuilder.updateAccount(...param);
+                console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+                if (!_.isEqual(tx1,tx2)) {
+                    console.error('updateAccount not equal');
+                    console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                    console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                } else {
+                    console.info('updateAccount goes well');
+                }
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:true});
+                console.log("transactionExtendE0: ",JSON.stringify(transactionExtendE, null, 2));
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                result = await broadcaster.broadcaster(null, new_acccount.privateKey, transactionExtendE);
+                console.log("result: ",JSON.stringify(result, null, 2));
+
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(tx2.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+
+                new_acccount = await tronWeb.createAccount();
+                await tronWeb.trx.sendTrx(new_acccount.address.hex,1000,{privateKey: PRIVATE_KEY});
+                param = [randomString(6), new_acccount.address.hex,{},tx1];
+                const tx3 = await tronWeb.transactionBuilder.updateAccount(...param);
+                console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+                const note = "Sending money to Bill.";
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx3, note,{txLocal:false});
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, new_acccount.privateKey, transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                console.log("updateAccount Success!");
+
             });
     });
 
     describe('#updateAccountPermissions()', function () {
-                it(`updateAccountPermissions to tronWeb.defaultAddress.hex`, async function () {
-                            const permissionData = {
-                                            "owner": {
-                                                "type": 0,
-                                                "keys": [
-                                                    {
-                                                        "address": tronWeb.defaultAddress.hex,
-                                                        "weight": 1
-                                                    }
-                                                ],
-                                                "threshold": 1,
-                                                "permission_name": "owner"
-                                            },
-                                            "witness": {
-                                                "keys": [
-                                                    {
-                                                        "address": tronWeb.defaultAddress.hex,
-                                                        "weight": 1
-                                                    }
-                                                ],
-                                                "threshold": 1,
-                                                "id": 1,
-                                                "type": 1,
-                                                "permission_name": "witness"
-                                            },
-                                            "owner_address": tronWeb.defaultAddress.hex,
-                                            "actives": [
-                                                {
-                                                    "operations": "7fff1fc0033e0000000000000000000000000000000000000000000000000000",
-                                                    "keys": [
-                                                        {
-                                                            "address": tronWeb.defaultAddress.hex,
-                                                            "weight": 1
-                                                        }
-                                                    ],
-                                                    "threshold": 1,
-                                                    "id": 2,
-                                                    "type": 2,
-                                                    "permission_name": "active"
-                                                }
-                                            ]
-                                        };
+        it(`updateAccountPermissions to tronWeb.defaultAddress.hex`, async function () {
+            WITNESS_ACCOUNT_HEX = tronWeb.address.toHex(WITNESS_ACCOUNT)
+            const permissionData = {
+                            "owner": {
+                                "type": 0,
+                                "keys": [
+                                    {
+                                        "address": WITNESS_ACCOUNT_HEX,
+                                        "weight": 1
+                                    }
+                                ],
+                                "threshold": 1,
+                                "permission_name": "owner"
+                            },
+                            "witness": {
+                                "keys": [
+                                    {
+                                        "address": WITNESS_ACCOUNT_HEX,
+                                        "weight": 1
+                                    }
+                                ],
+                                "threshold": 1,
+                                "id": 1,
+                                "type": 1,
+                                "permission_name": "witness"
+                            },
+                            "owner_address": WITNESS_ACCOUNT_HEX,
+                            "actives": [
+                                {
+                                    "operations": "7fff1fc0033e0000000000000000000000000000000000000000000000000000",
+                                    "keys": [
+                                        {
+                                            "address": WITNESS_ACCOUNT_HEX,
+                                            "weight": 1
+                                        }
+                                    ],
+                                    "threshold": 1,
+                                    "id": 2,
+                                    "type": 2,
+                                    "permission_name": "active"
+                                }
+                            ]
+                        };
 
-                            data = {
-                                owner_address: tronWeb.defaultAddress.hex,
-                                owner: permissionData.owner,
-                                witness:permissionData.witness,
-                                actives:permissionData.actives,
-                                visible: false,
-                                Permission_id: 2
-                            };
-                            console.log("data:",data);
-                            tx1 = await tronWeb.fullNode.request('wallet/accountpermissionupdate', data, 'post');
-                            console.log('TronGrid ', JSON.stringify(tx1, null, 2));
-                            console.log("permissionData.active:",permissionData.active);
+            data = {
+                owner_address: WITNESS_ACCOUNT_HEX,
+                owner: permissionData.owner,
+                witness:permissionData.witness,
+                actives:permissionData.actives,
+                visible: false,
+            };
+            console.log("data:",data);
+            tx1 = await tronWeb.fullNode.request('wallet/accountpermissionupdate', data, 'post');
+            console.log('TronGrid ', JSON.stringify(tx1, null, 2));
+            console.log("permissionData.active:",permissionData.active);
 
-                            param = [tronWeb.defaultAddress.hex, permissionData.owner,permissionData.witness, permissionData.actives, {permissionId: 2},tx1];
-                            const tx2 = await tronWeb.transactionBuilder.updateAccountPermissions(...param);
-                            console.log('TronWeb ',JSON.stringify(tx2, null, 2));
-                            if (!_.isEqual(tx1,tx2)) {
-                                console.error('updateAccountPermissions not equal');
-                                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                                console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                            } else {
-                                console.info('updateAccountPermissions goes well');
-                            }
-                        });
-            });
+            param = [WITNESS_ACCOUNT_HEX, permissionData.owner,permissionData.witness, permissionData.actives, {},tx1];
+            const tx2 = await tronWeb.transactionBuilder.updateAccountPermissions(...param);
+            console.log('TronWeb ',JSON.stringify(tx2, null, 2));
+            if (!_.isEqual(tx1,tx2)) {
+                console.error('updateAccountPermissions not equal');
+                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+            } else {
+                console.info('updateAccountPermissions goes well');
+            }
+
+            await wait(3);
+            transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+            console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+            result = await broadcaster.broadcaster(null, WITNESS_KEY, transactionExtendE);
+            console.log("result: ",JSON.stringify(result, null, 2));
+
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+
+            const note = "Sending money to Bill.";
+            await wait(3);
+            transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:false});
+            console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+            result = await broadcaster.broadcaster(null, WITNESS_KEY, transactionUpdate);
+            console.log("result: ",JSON.stringify(result, null, 2))
+            while (true) {
+                const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                if (Object.keys(tx).length === 0) {
+                    await wait(3);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            console.log("updateAccountPermissions Success!");
+
+        });
+    });
 
     describe('#sendToken()', function () {
         let tokenOptions
@@ -601,7 +764,7 @@ describe('TronWeb.transactionBuilder', function () {
 
 
         });
-        it.only("should allow accounts [6]  to send a token to accounts[1]", async function () {
+        it("should allow accounts [6]  to send a token to accounts[1]", async function () {
                     data = {
                                             owner_address: accounts.hex[6],
                                             to_address: accounts.hex[1],
