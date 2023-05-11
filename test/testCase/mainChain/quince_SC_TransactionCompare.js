@@ -500,7 +500,7 @@ describe('TronWeb.transactionBuilder', function () {
 
             //need check again,TRNWB-25
             // if txLocal:true， 则走本地构造交易，本地交易会少constant_result，energy_used，ret三个字段，多出result字段。 不管本地还是grid，tronweb都会增加字段："fee_limit": 150000000。
-            it.only('should trigger smart contract successfully', async function () {
+            it('should trigger smart contract successfully', async function () {
                 const issuerAddress = accounts.hex[6];
                 const functionSelector = 'testPure(uint256,uint256)';
                 const parameter = [
@@ -809,7 +809,7 @@ describe('TronWeb.transactionBuilder', function () {
             })
 
 
-            it('should trigger constant contract successfully', async function () {
+            it.only('should trigger constant contract successfully', async function () {
                 this.timeout(20000);
 
                 const contractAddress = transaction.contract_address;
@@ -819,7 +819,7 @@ describe('TronWeb.transactionBuilder', function () {
                     {type: 'uint256', value: 1},
                     {type: 'uint256', value: 2}
                 ]
-                const options = {txLocal:true};
+                const options = {txLocal:false};
 
                 paramsFromWeb = '00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002';
                 data = {
