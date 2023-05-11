@@ -1156,18 +1156,18 @@ export default class TransactionBuilder {
 
     triggerConstantContract(...params) {
         params[2]._isConstant = true
-        return this.triggerSmartContract(...params);
+        return this._triggerSmartContract(...params);
     }
 
     triggerConfirmedConstantContract(...params) {
         params[2]._isConstant = true
         params[2].confirmed = true
-        return this.triggerSmartContract(...params);
+        return this._triggerSmartContract(...params);
     }
 
     estimateEnergy(...params) {
         params[2].estimateEnergy = true;
-        return this.triggerSmartContract(...params);
+        return this._triggerSmartContract(...params);
     }
 
     _getTriggerSmartContractArgs(
