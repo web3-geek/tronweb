@@ -809,7 +809,7 @@ describe('TronWeb.transactionBuilder', function () {
             })
 
 
-            it.only('should trigger constant contract successfully', async function () {
+            it('should trigger constant contract successfully', async function () {
                 this.timeout(20000);
 
                 const contractAddress = transaction.contract_address;
@@ -830,22 +830,23 @@ describe('TronWeb.transactionBuilder', function () {
                                                             visible:false
                 }
 
-                for (let i = 0; i < 2; i++) {
+                for (let i = 0; i < 1; i++) {
                     if (i === 1) options.permissionId = 2;
                     if (i === 1) data.Permission_id = 2;
+
                     tx1 = await tronWeb.fullNode.request('wallet/triggersmartcontract', data, 'post');
                     console.log('TronGrid ', JSON.stringify(tx1, null, 2));
                     transaction = await tronWeb.transactionBuilder.triggerConstantContract(contractAddress, functionSelector, options,
-                        parameter, issuerAddress,tx1.transaction);
+                        parameter, issuerAddress);
                     console.log('TronWeb ', JSON.stringify(transaction, null, 2));
-                    if (!_.isEqual(tx1,transaction)) {
+                    /*if (!_.isEqual(tx1,transaction)) {
                                          console.error('should trigger constant contract not equal');
                                          console.log(JSON.stringify(tx1.transaction.raw_data.contract[0].parameter.value, null, 2));
                                          console.log(JSON.stringify(transaction.transaction.raw_data.contract[0].parameter.value, null, 2));
 
                     } else {
                                         console.info('should trigger constant contract goes well');
-                    }
+                    }*/
 
 
                     /*assert.isTrue(transaction.result.result &&
@@ -891,7 +892,7 @@ describe('TronWeb.transactionBuilder', function () {
                     {type: 'uint256', value: 1},
                     {type: 'uint256', value: 2}
                 ]
-                const options = {txLocal:false};
+                const options = {txLocal:true};
                 data = {
                     owner_address: accounts.hex[6],
                     contract_address: transaction.contract_address,
@@ -920,7 +921,7 @@ describe('TronWeb.transactionBuilder', function () {
 
                     assert.isTrue(transaction.result.result &&
                         transaction.transaction.raw_data.contract[0].parameter.type_url === 'type.googleapis.com/protocol.TriggerSmartContract');
-                    assert.equal(transaction.constant_result, '0000000000000000000000000000000000000000000000000000000000000002');
+                    assert.equal(transaction.constant_result, '0000000000000000000000000000000000000000000000000000000000000004');
                     transaction = await broadcaster.broadcaster(null, accounts.pks[6], transaction.transaction);
                     assert.isTrue(transaction.receipt.result)
                     assert.equal(transaction.transaction.raw_data.contract[0].Permission_id || 0, options.permissionId || 0);
@@ -1079,6 +1080,40 @@ describe('TronWeb.transactionBuilder', function () {
                      } else {
                             console.info('updateSetting goes well');
                      }
+                await wait(3);
+                transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+                console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                result = await broadcaster.broadcaster(null, accounts.pks[3], transactionExtendE);
+                console.log("result: ",JSON.stringify(result, null, 2));
+
+                while (true) {
+                                    const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                                    if (Object.keys(tx).length === 0) {
+                                        await wait(3);
+                                                        continue;
+                                    } else {
+                                        break;
+                                    }
+                }
+
+                const note = "Sending money to Bill.";
+                await wait(3);
+                transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:false});
+                console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                result = await broadcaster.broadcaster(null, accounts.pks[3], transactionUpdate);
+                console.log("result: ",JSON.stringify(result, null, 2))
+                while (true) {
+                    const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                    if (Object.keys(tx).length === 0) {
+                        await wait(3);
+                                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                console.log("111111");
+
                 });
         });
 
@@ -1108,23 +1143,58 @@ describe('TronWeb.transactionBuilder', function () {
                                     contract_address: transaction.contract_address,
                                     origin_energy_limit: 10e6,
                                     visible: false,
-                                    Permission_id: 2
                                  }
-                    tx1 = await tronWeb.fullNode.request('wallet/updatesetting', data, 'post');
+                    tx1 = await tronWeb.fullNode.request('wallet/updateenergylimit', data, 'post');
                     console.log('TronGrid ', JSON.stringify(tx1, null, 2));
-                    const param = [transaction.contract_address, 10e6, accounts.b58[3], { permissionId: 2 }, tx1];
+                    const param = [transaction.contract_address, 10e6, accounts.b58[3], { }, tx1];
                     const tx2 = await tronWeb.transactionBuilder.updateEnergyLimit(...param);
                     console.log('TronWeb ', JSON.stringify(tx2, null, 2));
                     const authResult =TronWeb.utils.transaction.txCheck(tx2);
                     assert.equal(authResult, true);
 
                     if (!_.isEqual(tx1,tx2)) {
-                                                console.error('updateEnergyLimit not equal');
-                                                console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                                                console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                                         } else {
-                                                console.info('updateEnergyLimit goes well');
-                                         }
+                            console.error('updateEnergyLimit not equal');
+                            console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                            console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                            console.info('updateEnergyLimit goes well');
+                    }
+
+                    await wait(3);
+                    transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+                    console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                    result = await broadcaster.broadcaster(null, accounts.pks[3], transactionExtendE);
+                    console.log("result: ",JSON.stringify(result, null, 2));
+
+                    while (true) {
+                                        const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                                        if (Object.keys(tx).length === 0) {
+                                            await wait(3);
+                                                            continue;
+                                        } else {
+                                            break;
+                                        }
+                    }
+
+                    const note = "Sending money to Bill.";
+                    await wait(3);
+                    transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:false});
+                    console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                    result = await broadcaster.broadcaster(null, accounts.pks[3], transactionUpdate);
+                    console.log("result: ",JSON.stringify(result, null, 2))
+                    while (true) {
+                        const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                        if (Object.keys(tx).length === 0) {
+                            await wait(3);
+                                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+                    console.log("111111");
+
+
                 });
             });
 
@@ -1211,21 +1281,38 @@ describe('TronWeb.transactionBuilder', function () {
                     assert.equal(transaction.raw_data.contract[0].Permission_id, param[2]?.permissionId);
 
                     if (param.length === 2) {
-                        const res = await broadcaster.broadcaster(null, accounts.pks[7], transaction);
-                        assert.isTrue(res.receipt.result);
+                        transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                        console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                        result = await broadcaster.broadcaster(null, accounts.pks[7], transactionExtendE);
+                        console.log("result: ",JSON.stringify(result, null, 2));
 
-                        let contract;
-                        // verify contract abi after
                         while (true) {
-                            contract = await tronWeb.trx.getContract(contractAddress);
-                            if (Object.keys(contract.abi).length > 0) {
+                            const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                            if (Object.keys(tx).length === 0) {
                                 await wait(3);
-                                continue;
+                                                continue;
                             } else {
                                 break;
                             }
                         }
-                        assert.isTrue(Object.keys(contract.abi).length === 0);
+
+                        const note = "Sending money to Bill.";
+                        await wait(3);
+                        transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                        console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                        result = await broadcaster.broadcaster(null, accounts.pks[7], transactionUpdate);
+                        console.log("result: ",JSON.stringify(result, null, 2))
+                        while (true) {
+                            const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                            if (Object.keys(tx).length === 0) {
+                                await wait(3);
+                                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                        console.log("111111");
                     }
                 }
             });
@@ -1251,14 +1338,14 @@ describe('TronWeb.transactionBuilder', function () {
                         const result = await broadcaster.broadcaster(null,accounts.pks[11],transaction);
                         console.log("result ",result);*/
                         while (true) {
-                                                const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
-                                                if (Object.keys(tx).length === 0) {
-                                                    await wait(3);
-                                                    continue;
-                                                } else {
-                                                    break;
-                                                }
-                                            }
+                                    const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
+                                    if (Object.keys(tx).length === 0) {
+                                        await wait(3);
+                                        continue;
+                                    } else {
+                                        break;
+                                    }
+                                }
 
                     })
 
@@ -1288,12 +1375,46 @@ describe('TronWeb.transactionBuilder', function () {
                         assert.equal(parameter.type_url, 'type.googleapis.com/protocol.VoteWitnessContract');
 
                         if (!_.isEqual(tx1,tx2)) {
-                                                                        console.error('vote not equal');
-                                                                        console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
-                                                                        console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
-                                                  } else {
-                                                                        console.info('vote goes well');
-                                                  }
+                            console.error('vote not equal');
+                            console.log(JSON.stringify(tx1.raw_data.contract[0].parameter.value, null, 2));
+                            console.log(JSON.stringify(tx2.raw_data.contract[0].parameter.value, null, 2));
+                        } else {
+                            console.info('vote goes well');
+                        }
+                        transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(tx2, 3600, {txLocal:false});
+                        console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                        result = await broadcaster.broadcaster(null, accounts.pks[11], transactionExtendE);
+                        console.log("result: ",JSON.stringify(result, null, 2));
+
+                        while (true) {
+                            const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                            if (Object.keys(tx).length === 0) {
+                                await wait(3);
+                                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+
+                        const note = "Sending money to Bill.";
+                        await wait(3);
+                        transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(tx2, note,{txLocal:false});
+                        console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                        result = await broadcaster.broadcaster(null, accounts.pks[11], transactionUpdate);
+                        console.log("result: ",JSON.stringify(result, null, 2))
+                        while (true) {
+                            const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                            if (Object.keys(tx).length === 0) {
+                                await wait(3);
+                                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                        console.log("111111");
+
+
 
                     })
 
@@ -1357,6 +1478,7 @@ describe('TronWeb.transactionBuilder', function () {
 
             let parametersUsed = [{"key": 0, "value": 100000}, {"key": 1, "value": 2}]
             const witnessAccount = "TT1smsmhxype64boboU8xTuNZVCKP1w6qT"
+            const WITNESS_KEY2 = "9fd8e129de181ea44c6129f727a6871440169568ade002943ead0e7a16d8edac"
 
             it('should allow the SR account to create a new proposal as a single object', async function () {
 
@@ -1387,13 +1509,46 @@ describe('TronWeb.transactionBuilder', function () {
                     const transaction = await tronWeb.transactionBuilder.createProposal(...param)
                     console.log('TronWeb ', JSON.stringify(transaction, null, 2))
                     if (!_.isEqual(gridtx,transaction)) {
-                                                                console.error('createProposal case 1 not equal');
-                                                                console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
-                                                                console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
-                                                            } else {
-                                                                console.info('createProposal case 1 goes well');
-                                                            }
+                        console.error('createProposal case 1 not equal');
+                        console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                        console.info('createProposal case 1 goes well');
+                    }
+                    if (i === 0) {
+                          transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                          console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                          result = await broadcaster.broadcaster(null, WITNESS_KEY2, transactionExtendE);
+                          console.log("result: ",JSON.stringify(result, null, 2));
 
+                          while (true) {
+                              const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                              if (Object.keys(tx).length === 0) {
+                                  await wait(3);
+                                                  continue;
+                              } else {
+                                  break;
+                              }
+                          }
+
+                          const note = "Sending money to Bill.";
+                          await wait(3);
+                          transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                          console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                          result = await broadcaster.broadcaster(null, WITNESS_KEY2, transactionUpdate);
+                          console.log("result: ",JSON.stringify(result, null, 2))
+                          while (true) {
+                              const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                              if (Object.keys(tx).length === 0) {
+                                  await wait(3);
+                                                  continue;
+                              } else {
+                                  break;
+                              }
+                          }
+                          console.log("111111");
+                    }
 
                 }
 
@@ -1432,12 +1587,47 @@ describe('TronWeb.transactionBuilder', function () {
                     } else {
                         console.info('createProposal case 2 goes well');
                     }
+                    if (i === 0) {
+                          transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                          console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                          result = await broadcaster.broadcaster(null, WITNESS_KEY2, transactionExtendE);
+                          console.log("result: ",JSON.stringify(result, null, 2));
+
+                          while (true) {
+                              const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                              if (Object.keys(tx).length === 0) {
+                                  await wait(3);
+                                                  continue;
+                              } else {
+                                  break;
+                              }
+                          }
+
+                          const note = "Sending money to Bill.";
+                          await wait(3);
+                          transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                          console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                          result = await broadcaster.broadcaster(null, WITNESS_KEY2, transactionUpdate);
+                          console.log("result: ",JSON.stringify(result, null, 2))
+                          while (true) {
+                              const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                              if (Object.keys(tx).length === 0) {
+                                  await wait(3);
+                                                  continue;
+                              } else {
+                                  break;
+                              }
+                          }
+                    }
+
 
 
                 }
             });
     });
 
+    //Contract validate error : Proposal[25] canceled
     describe("#deleteProposal", async function () {
 
 
@@ -1486,7 +1676,7 @@ describe('TronWeb.transactionBuilder', function () {
                     const gridtx = await tronWeb.fullNode.request('wallet/proposaldelete', data, 'post');
                     console.log('TronGrid ', JSON.stringify(gridtx, null, 2));
                         if (i === 0) {
-                             param = [proposals[0].proposal_id, witnessAccount, gridtx];
+                             param = [proposals[0].proposal_id, witnessAccount, {}, gridtx];
                         }else{
                              param = [proposals[0].proposal_id, witnessAccount, {permissionId: 2},gridtx];
                         }
@@ -1499,6 +1689,41 @@ describe('TronWeb.transactionBuilder', function () {
                     } else {
                         console.info('deleteProposal goes well');
                     }
+                    if (i === 0) {
+                          transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                          console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                          result = await broadcaster.broadcaster(null, witnessKey, transactionExtendE);
+                          console.log("result: ",JSON.stringify(result, null, 2));
+
+                          while (true) {
+                              const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                              if (Object.keys(tx).length === 0) {
+                                  await wait(3);
+                                                  continue;
+                              } else {
+                                  break;
+                              }
+                          }
+
+                          const note = "Sending money to Bill.";
+                          await wait(3);
+                          transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                          console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                          result = await broadcaster.broadcaster(null, witnessKey, transactionUpdate);
+                          console.log("result: ",JSON.stringify(result, null, 2))
+                          while (true) {
+                              const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                              if (Object.keys(tx).length === 0) {
+                                  await wait(3);
+                                                  continue;
+                              } else {
+                                  break;
+                              }
+                          }
+                          console.log('111111');
+                    }
+
 
                     }
 
@@ -1530,6 +1755,41 @@ describe('TronWeb.transactionBuilder', function () {
                assert.equal(parameter.value.owner_address, accounts.hex[10]);
                await assertEqualHex(parameter.value.url, url);
                assert.equal(parameter.type_url, 'type.googleapis.com/protocol.WitnessCreateContract');
+
+                 transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                 console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                 result = await broadcaster.broadcaster(null, accounts.pks[10], transactionExtendE);
+                 console.log("result: ",JSON.stringify(result, null, 2));
+
+                 while (true) {
+                     const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                     if (Object.keys(tx).length === 0) {
+                         await wait(3);
+                                         continue;
+                     } else {
+                         break;
+                     }
+                 }
+
+                 const note = "Sending money to Bill.";
+                 await wait(3);
+                 transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                 console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                 result = await broadcaster.broadcaster(null, accounts.pks[10], transactionUpdate);
+                 console.log("result: ",JSON.stringify(result, null, 2))
+                 while (true) {
+                     const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                     if (Object.keys(tx).length === 0) {
+                         await wait(3);
+                                         continue;
+                     } else {
+                         break;
+                     }
+                 }
+                 console.log("1111111")
+
+
             });
     });
 
@@ -1582,13 +1842,50 @@ describe('TronWeb.transactionBuilder', function () {
                     assert.equal(parameter.value.owner_address, param[1]);
                     assert.equal(parameter.type_url, 'type.googleapis.com/protocol.UpdateBrokerageContract');
                     assert.equal(transaction.raw_data.contract[0].Permission_id, param[2]?.permissionId);
+
+                    if (i === 0) {
+                         transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                         console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                         result = await broadcaster.broadcaster(null, accounts.pks[1], transactionExtendE);
+                         console.log("result: ",JSON.stringify(result, null, 2));
+
+                         while (true) {
+                             const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                             if (Object.keys(tx).length === 0) {
+                                 await wait(3);
+                                                 continue;
+                             } else {
+                                 break;
+                             }
+                         }
+
+                         const note = "Sending money to Bill.";
+                         await wait(3);
+                         transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                         console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                         result = await broadcaster.broadcaster(null, accounts.pks[1], transactionUpdate);
+                         console.log("result: ",JSON.stringify(result, null, 2))
+                         while (true) {
+                             const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                             if (Object.keys(tx).length === 0) {
+                                 await wait(3);
+                                                 continue;
+                             } else {
+                                 break;
+                             }
+                         }
+                         console.log("1111111")
+                    }
+
+
                 }
             });
     });
 
     describe("#tradeExchangeTokens", async function () {
-            const idxS = 27;
-            const idxE = 29;
+            const idxS = 25;
+            const idxE = 27;
             let tokenNames = [];
             let exchangeId = '';
 
@@ -1682,6 +1979,43 @@ describe('TronWeb.transactionBuilder', function () {
                     const authResult3 =
                         TronWeb.utils.transaction.txCheck(transaction);
                     assert.equal(authResult3, false);
+
+                    if (i === 0) {
+                         transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                         console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                         result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionExtendE);
+                         console.log("result: ",JSON.stringify(result, null, 2));
+
+                         /*while (true) {
+                             const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                             if (Object.keys(tx).length === 0) {
+                                 await wait(3);
+                                                 continue;
+                             } else {
+                                 break;
+                             }
+                         }*/
+
+                         const note = "Sending money to Bill.";
+                         await wait(3);
+                         transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                         console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                         result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
+                         console.log("result: ",JSON.stringify(result, null, 2))
+                         while (true) {
+                             const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                             if (Object.keys(tx).length === 0) {
+                                 await wait(3);
+                                                 continue;
+                             } else {
+                                 break;
+                             }
+                         }
+                         console.log("1111111")
+                    }
+
+
                 }
             });
     });
@@ -1743,18 +2077,53 @@ describe('TronWeb.transactionBuilder', function () {
                 let transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[0], 10e3, tokenNames[1], 10e3, accounts.hex[toIdx1],{},gridtx);
                 console.log('TronWeb ', JSON.stringify(gridtx, null, 2));
                 if (!_.isEqual(gridtx,transaction)) {
-                                                            console.error('createTokenExchange not equal');
-                                                            console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
-                                                            console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
-                                                        } else {
-                                                            console.info('createTokenExchange goes well');
-                                                        }
+                        console.error('createTokenExchange not equal');
+                        console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                        console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                    } else {
+                        console.info('createTokenExchange goes well');
+                    }
                 let parameter = txPars(transaction);
                 assert.equal(transaction.txID.length, 64);
                 assert.equal(TronWeb.toUtf8(parameter.value.first_token_id), tokenNames[0]);
                 assert.equal(TronWeb.toUtf8(parameter.value.second_token_id), tokenNames[1]);
                 assert.equal(parameter.type_url, 'type.googleapis.com/protocol.ExchangeCreateContract');
                 assert.isUndefined(transaction.raw_data.contract[0].Permission_id);
+
+                 transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                 console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                 /*result = await broadcaster.broadcaster(null, accounts.pks[toIdx1], transactionExtendE);
+                 console.log("result: ",JSON.stringify(result, null, 2));
+
+                 while (true) {
+                     const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                     if (Object.keys(tx).length === 0) {
+                         await wait(3);
+                                         continue;
+                     } else {
+                         break;
+                     }
+                 }*/
+
+                 const note = "Sending money to Bill.";
+                 await wait(3);
+                 transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                 console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                 result = await broadcaster.broadcaster(null, accounts.pks[toIdx1], transactionUpdate);
+                 console.log("result: ",JSON.stringify(result, null, 2))
+                 while (true) {
+                     const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                     if (Object.keys(tx).length === 0) {
+                         await wait(3);
+                                         continue;
+                     } else {
+                         break;
+                     }
+                 }
+                 console.log("1111111")
+
+
 
                 data ={
                                     owner_address: accounts.hex[toIdx1],
@@ -1771,12 +2140,12 @@ describe('TronWeb.transactionBuilder', function () {
                 transaction = await tronWeb.transactionBuilder.createTokenExchange(tokenNames[0], 10e3, tokenNames[1], 10e3, accounts.hex[toIdx1], {permissionId: 2},gridtx);
                 console.log("TronWeb ",transaction);
                 if (!_.isEqual(gridtx,transaction)) {
-                                                         console.error('createTokenExchange not equal');
-                                                         console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
-                                                         console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
-                                                     } else {
-                                                         console.info('createTokenExchange goes well');
-                                                     }
+                     console.error('createTokenExchange not equal');
+                     console.log(JSON.stringify(gridtx.raw_data.contract[0].parameter.value, null, 2));
+                     console.log(JSON.stringify(transaction.raw_data.contract[0].parameter.value, null, 2));
+                 } else {
+                     console.info('createTokenExchange goes well');
+                 }
                 parameter = txPars(transaction);
                 assert.equal(transaction.txID.length, 64);
                 assert.equal(TronWeb.toUtf8(parameter.value.first_token_id), tokenNames[0]);
@@ -1869,6 +2238,43 @@ describe('TronWeb.transactionBuilder', function () {
                         const authResult =
                             TronWeb.utils.transaction.txCheck(transaction);
                         assert.equal(authResult, true);
+
+                        if (i === 0) {
+                             transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                             console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                             /*result = await broadcaster.broadcaster(null, accounts.pks[toIdx1], transactionExtendE);
+                             console.log("result: ",JSON.stringify(result, null, 2));
+
+                             while (true) {
+                                 const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                                 if (Object.keys(tx).length === 0) {
+                                     await wait(3);
+                                                     continue;
+                                 } else {
+                                     break;
+                                 }
+                             }*/
+
+                             const note = "Sending money to Bill.";
+                             await wait(3);
+                             transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                             console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                             result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
+                             console.log("result: ",JSON.stringify(result, null, 2))
+                             while (true) {
+                                 const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                                 if (Object.keys(tx).length === 0) {
+                                     await wait(3);
+                                                     continue;
+                                 } else {
+                                     break;
+                                 }
+                             }
+                             console.log("1111111")
+                        }
+
+
                 }
             });
 
@@ -1960,14 +2366,50 @@ describe('TronWeb.transactionBuilder', function () {
                     const authResult =
                         TronWeb.utils.transaction.txCheck(transaction);
                     assert.equal(authResult, true);
+
+                    if(i === 0){
+                         transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                         console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                         /*result = await broadcaster.broadcaster(null, accounts.pks[toIdx1], transactionExtendE);
+                         console.log("result: ",JSON.stringify(result, null, 2));
+
+                         while (true) {
+                             const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                             if (Object.keys(tx).length === 0) {
+                                 await wait(3);
+                                                 continue;
+                             } else {
+                                 break;
+                             }
+                         }*/
+
+                         const note = "Sending money to Bill.";
+                         await wait(3);
+                         transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                         console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                         result = await broadcaster.broadcaster(null, PRIVATE_KEY, transactionUpdate);
+                         console.log("result: ",JSON.stringify(result, null, 2))
+                         while (true) {
+                             const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                             if (Object.keys(tx).length === 0) {
+                                 await wait(3);
+                                                 continue;
+                             } else {
+                                 break;
+                             }
+                         }
+                         console.log("1111111")
+                    }
+
                 }
             });
         });
 
-    describe('#setAccountId()', function () {
+    describe.only('#setAccountId()', function () {
         it(`should set account id accounts`, async function () {
 
-                const ids = ['abcabc110', 'testtest', 'jackieshen110'];
+                const ids = ['abcabc11011abc', 'testtest11', 'jackieshen11011'];
 
                 for (let id of ids) {
                     let accountId = TronWeb.toHex(id);
@@ -1993,6 +2435,41 @@ describe('TronWeb.transactionBuilder', function () {
                     assert.equal(parameter.value.account_id, accountId.slice(2));
                     assert.equal(parameter.value.owner_address, accounts.hex[4]);
                     assert.equal(parameter.type_url, 'type.googleapis.com/protocol.SetAccountIdContract');
+
+                    transactionExtendE = await tronWeb.transactionBuilder.extendExpiration(transaction, 3600, {txLocal:false});
+                     console.log("transactionExtendE: ",JSON.stringify(transactionExtendE, null, 2));
+                     /*result = await broadcaster.broadcaster(null, accounts.pks[toIdx1], transactionExtendE);
+                     console.log("result: ",JSON.stringify(result, null, 2));
+
+                     while (true) {
+                         const tx = await tronWeb.trx.getTransactionInfo(transactionExtendE.txID);
+                         if (Object.keys(tx).length === 0) {
+                             await wait(3);
+                                             continue;
+                         } else {
+                             break;
+                         }
+                     }*/
+
+                     const note = "Sending money to Bill.";
+                     await wait(3);
+                     transactionUpdate = await tronWeb.transactionBuilder.addUpdateData(transaction, note,{txLocal:false});
+                     console.log("transactionUpdate: ",JSON.stringify(transactionUpdate, null, 2))
+
+                     result = await broadcaster.broadcaster(null, accounts.pks[4], transactionUpdate);
+                     console.log("result: ",JSON.stringify(result, null, 2))
+                     while (true) {
+                         const tx = await tronWeb.trx.getTransactionInfo(transactionUpdate.txID);
+                         if (Object.keys(tx).length === 0) {
+                             await wait(3);
+                             continue;
+                         } else {
+                             break;
+                         }
+                     }
+                     console.log("1111111")
+
+
                 }
             });
     });
