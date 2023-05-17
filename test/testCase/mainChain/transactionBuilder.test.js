@@ -1689,6 +1689,8 @@ describe('TronWeb.transactionBuilder', function () {
                     parameter, issuerAddress);
                 assert.isTrue(transaction.result.result &&
                     transaction.transaction.raw_data.contract[0].parameter.type_url === 'type.googleapis.com/protocol.TriggerSmartContract');
+                console.log("contractAddress: "+contractAddress)
+                console.log("transaction: "+util.inspect(transaction,true,null,true))
                 assert.equal(transaction.constant_result, '0000000000000000000000000000000000000000000000000000000000000004');
                 transaction = await broadcaster.broadcaster(null, accounts.pks[6], transaction.transaction);
                 assert.isTrue(transaction.receipt.result)
@@ -2019,7 +2021,7 @@ describe('TronWeb.transactionBuilder', function () {
             console.log("updateTx:"+util.inspect(updateTx))
             console.log("updateTx.txID:"+updateTx.transaction.txID)
             assert.equal(updateTx.transaction.txID.length, 64);
-            await wait(30);
+            await wait(35);
 
             const param = [transactions[0], accounts.hex[7], {permissionId: 2}];
 
@@ -2028,6 +2030,7 @@ describe('TronWeb.transactionBuilder', function () {
 
             // verify contract abi before
             const contract = await tronWeb.trx.getContract(contractAddress);
+            console.log("contract: "+util.inspect(contract,true,null,true))
             assert.isTrue(Object.keys(contract.abi).length > 0)
 
             // clear abi
@@ -2511,7 +2514,7 @@ describe('TronWeb.transactionBuilder', function () {
         before(async () => {
             await broadcaster.broadcaster(tronWeb.transactionBuilder.sendTrx(accounts.b58[6], 10000e6), PRIVATE_KEY);
             const transaction = await tronWeb.transactionBuilder.applyForSR(accounts.b58[6], 'url.tron.network');
-            await broadcaster.broafdcaster(transaction, accounts.pks[6]);
+            await broadcaster.broadcaster(transaction, accounts.pks[6]);
             while (true) {
                 const tx = await tronWeb.trx.getTransactionInfo(transaction.txID);
                 if (Object.keys(tx).length === 0) {
