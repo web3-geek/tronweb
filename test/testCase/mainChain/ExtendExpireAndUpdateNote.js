@@ -776,7 +776,6 @@ describe('TronWeb.transactionBuilder', function () {
                     tx1 = await tronWeb.fullNode.request('wallet/transferasset', data, 'post');
                     console.log('TronGrid ', JSON.stringify(tx1, null, 2));
 
-                    const param =["TE3if14LPRdKTiQTkEfqUwmWXuLMecQueo", 5, '1000323', "TX74o6dWugAgdaMv8M39QP9YL5QRgfj32t",{}];
 
                     const param =[accounts.b58[1], 5, tokenID, accounts.b58[6],{}, tx1];
                     const tx2 = await tronWeb.transactionBuilder.sendToken(...param)
@@ -1097,7 +1096,7 @@ describe('TronWeb.transactionBuilder', function () {
                     });
     });
 
-    describe.only('#updateToken()', function () {
+    describe('#updateToken()', function () {
                 it(`updateToken 1000069 for account8`, async function () {
                             data = {
                                 owner_address: accounts.hex[8],
