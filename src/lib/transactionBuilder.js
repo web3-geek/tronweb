@@ -24,6 +24,31 @@ function deepCopyJson(json) {
     return JSON.parse(JSON.stringify(json));
 }
 
+function resultManager(transaction, data, options, callback) {
+    if (typeof options === 'function') {
+        callback = options;
+    }
+
+    if (typeof data === 'function') {
+        callback = data;
+        data = null;
+    }
+
+    if (transaction.Error)
+        return callback(transaction.Error);
+
+    if (transaction.result && transaction.result.message) {
+        return callback(
+            self.tronWeb.toUtf8(transaction.result.message)
+        );
+    }
+    const authResult = txCheckWithArgs(transaction, data, options);
+    if(authResult) {
+        return callback(null, transaction);
+    }
+    return callback('Invalid transaction');
+}
+
 function resultManagerTriggerSmartContract(transaction, data, options, callback) {
     if (transaction.Error)
         return callback(transaction.Error);
@@ -682,7 +707,7 @@ export default class TransactionBuilder {
         if(toHex(receiverAddress) === toHex(address)) {
             return callback('Receiver address must not be the same as owner address');
         }
-    
+
         const data = {
             owner_address: toHex(address),
             receiver_address: toHex(receiverAddress),
@@ -1110,23 +1135,248 @@ export default class TransactionBuilder {
             }
             params.splice(3, 1)
         }
+        if (params[2]?.txLocal) {
+            return this._triggerSmartContractLocal(...params);
+        }
         return this._triggerSmartContract(...params);
     }
 
     triggerConstantContract(...params) {
         params[2]._isConstant = true
-        return this.triggerSmartContract(...params);
+        return this._triggerSmartContract(...params);
     }
 
     triggerConfirmedConstantContract(...params) {
         params[2]._isConstant = true
         params[2].confirmed = true
-        return this.triggerSmartContract(...params);
+        return this._triggerSmartContract(...params);
     }
 
     estimateEnergy(...params) {
         params[2].estimateEnergy = true;
-        return this.triggerSmartContract(...params);
+        return this._triggerSmartContract(...params);
+    }
+
+    _getTriggerSmartContractArgs(
+        contractAddress,
+        functionSelector,
+        options,
+        parameters,
+        issuerAddress,
+        tokenValue,
+        tokenId,
+        callValue,
+        feeLimit,
+    ) {
+        const args = {
+            contract_address: toHex(contractAddress),
+            owner_address: toHex(issuerAddress)
+        };
+
+
+        if (functionSelector && utils.isString(functionSelector)) {
+            functionSelector = functionSelector.replace('/\s*/g', '');
+            if (parameters.length) {
+                const abiCoder = new AbiCoder();
+                let types = [];
+                const values = [];
+
+                for (let i = 0; i < parameters.length; i++) {
+                    let {type, value} = parameters[i];
+
+                    if (!type || !utils.isString(type) || !type.length)
+                        return callback('Invalid parameter type provided: ' + type);
+
+                    if (type === 'address')
+                        value = toHex(value).replace(ADDRESS_PREFIX_REGEX, '0x');
+                    else if (type.match(/^([^\x5b]*)(\x5b|$)/)[0] === 'address[')
+                        value = value.map(v => toHex(v).replace(ADDRESS_PREFIX_REGEX, '0x'));
+
+                    types.push(type);
+                    values.push(value);
+                }
+
+                try {
+                    // workaround for unsupported trcToken type
+                    types = types.map(type => {
+                        if (/trcToken/.test(type)) {
+                            type = type.replace(/trcToken/, 'uint256')
+                        }
+                        return type
+                    })
+
+                    parameters = abiCoder.encode(types, values).replace(/^(0x)/, '');
+
+                } catch (ex) {
+                    return callback(ex);
+                }
+            } else parameters = '';
+
+            // work for abiv2 if passed the function abi in options
+            if (options.funcABIV2) {
+                parameters = encodeParamsV2ByABI(options.funcABIV2, options.parametersV2).replace(/^(0x)/, '');
+            }
+
+            if (options.shieldedParameter && utils.isString(options.shieldedParameter)) {
+                parameters = options.shieldedParameter.replace(/^(0x)/, '');
+            }
+
+            if (options.rawParameter && utils.isString(options.rawParameter)) {
+                parameters = options.rawParameter.replace(/^(0x)/, '');
+            }
+
+            args.function_selector = functionSelector;
+            args.parameter = parameters;
+        }
+
+        args.call_value = parseInt(callValue)
+        if (utils.isNotNullOrUndefined(tokenValue))
+            args.call_token_value = parseInt(tokenValue)
+        if (utils.isNotNullOrUndefined(tokenId))
+            args.token_id = parseInt(tokenId)
+
+        if (!(options._isConstant || options.estimateEnergy)) {
+            args.fee_limit = parseInt(feeLimit)
+        }
+
+        if (options.permissionId) {
+            args.Permission_id = options.permissionId;
+        }
+
+        return args;
+    }
+
+    _triggerSmartContractLocal(
+        contractAddress,
+        functionSelector,
+        options = {},
+        parameters = [],
+        issuerAddress = this.tronWeb.defaultAddress.hex,
+        callback = false
+    ) {
+
+        if (utils.isFunction(issuerAddress)) {
+            callback = issuerAddress;
+            issuerAddress = this.tronWeb.defaultAddress.hex;
+        }
+
+        if (utils.isFunction(parameters)) {
+            callback = parameters;
+            parameters = [];
+        }
+
+        if (!callback) {
+            return this.injectPromise(
+                this._triggerSmartContractLocal,
+                contractAddress,
+                functionSelector,
+                options,
+                parameters,
+                issuerAddress
+            );
+        }
+
+        let {
+            tokenValue,
+            tokenId,
+            callValue,
+            feeLimit,
+        } = Object.assign({
+            callValue: 0,
+            feeLimit: this.tronWeb.feeLimit
+        }, options)
+
+        if (this.validator.notValid([
+            {
+                name: 'feeLimit',
+                type: 'integer',
+                value: feeLimit,
+                gt: 0
+            },
+            {
+                name: 'callValue',
+                type: 'integer',
+                value: callValue,
+                gte: 0
+            },
+            {
+                name: 'parameters',
+                type: 'array',
+                value: parameters
+            },
+            {
+                name: 'contract',
+                type: 'address',
+                value: contractAddress
+            },
+            {
+                name: 'issuer',
+                type: 'address',
+                value: issuerAddress,
+                optional: true
+            },
+            {
+                name: 'tokenValue',
+                type: 'integer',
+                value: tokenValue,
+                gte: 0,
+                optional: true
+            },
+            {
+                name: 'tokenId',
+                type: 'integer',
+                value: tokenId,
+                gte: 0,
+                optional: true
+            }
+        ], callback))
+            return;
+
+        const args = this._getTriggerSmartContractArgs(
+            contractAddress,
+            functionSelector,
+            options,
+            parameters,
+            issuerAddress,
+            tokenValue,
+            tokenId,
+            callValue,
+            feeLimit
+        );
+
+        if (args.function_selector) {
+            args.data = keccak256(Buffer.from(args.function_selector, 'utf-8')).toString().substring(2, 10) + args.parameter;
+        }
+        const value = {
+            data: args.data,
+            owner_address: args.owner_address,
+            contract_address: args.contract_address,
+        };
+        if (args.call_value) {
+            value.call_value = args.call_value;
+        }
+        if (args.call_token_value) {
+            value.call_token_value = args.call_token_value;
+        }
+        if (args.token_id) {
+            value.token_id = args.token_id;
+        }
+        createTransaction(
+            this.tronWeb,
+            'TriggerSmartContract',
+            value,
+            options.permissionId,
+            {
+                fee_limit: args.fee_limit,
+            }
+        ).then(transaction => {
+            callback(null, {
+                result: {
+                    result: true,
+                },
+                transaction,
+            });
+        }).catch(err => callback(err));
     }
 
     _triggerSmartContract(
@@ -1215,76 +1465,17 @@ export default class TransactionBuilder {
         ], callback))
             return;
 
-        const args = {
-            contract_address: toHex(contractAddress),
-            owner_address: toHex(issuerAddress)
-        };
-
-
-        if (functionSelector && utils.isString(functionSelector)) {
-            functionSelector = functionSelector.replace('/\s*/g', '');
-            if (parameters.length) {
-                const abiCoder = new AbiCoder();
-                let types = [];
-                const values = [];
-
-                for (let i = 0; i < parameters.length; i++) {
-                    let {type, value} = parameters[i];
-
-                    if (!type || !utils.isString(type) || !type.length)
-                        return callback('Invalid parameter type provided: ' + type);
-
-                    if (type === 'address')
-                        value = toHex(value).replace(ADDRESS_PREFIX_REGEX, '0x');
-                    else if (type.match(/^([^\x5b]*)(\x5b|$)/)[0] === 'address[')
-                        value = value.map(v => toHex(v).replace(ADDRESS_PREFIX_REGEX, '0x'));
-
-                    types.push(type);
-                    values.push(value);
-                }
-
-                try {
-                    // workaround for unsupported trcToken type
-                    types = types.map(type => {
-                        if (/trcToken/.test(type)) {
-                            type = type.replace(/trcToken/, 'uint256')
-                        }
-                        return type
-                    })
-
-                    parameters = abiCoder.encode(types, values).replace(/^(0x)/, '');
-
-                } catch (ex) {
-                    return callback(ex);
-                }
-            } else parameters = '';
-
-            // work for abiv2 if passed the function abi in options
-            if (options.funcABIV2) {
-                parameters = encodeParamsV2ByABI(options.funcABIV2, options.parametersV2).replace(/^(0x)/, '');
-            }
-
-            if (options.shieldedParameter && utils.isString(options.shieldedParameter)) {
-                parameters = options.shieldedParameter.replace(/^(0x)/, '');
-            }
-
-            if (options.rawParameter && utils.isString(options.rawParameter)) {
-                parameters = options.rawParameter.replace(/^(0x)/, '');
-            }
-
-            args.function_selector = functionSelector;
-            args.parameter = parameters;
-        }
-
-        args.call_value = parseInt(callValue)
-        if (utils.isNotNullOrUndefined(tokenValue))
-            args.call_token_value = parseInt(tokenValue)
-        if (utils.isNotNullOrUndefined(tokenId))
-            args.token_id = parseInt(tokenId)
-
-        if (options.permissionId) {
-            args.Permission_id = options.permissionId;
-        }
+        const args = this._getTriggerSmartContractArgs(
+            contractAddress,
+            functionSelector,
+            options,
+            parameters,
+            issuerAddress,
+            tokenValue,
+            tokenId,
+            callValue,
+            feeLimit
+        );
 
         let pathInfo = 'triggersmartcontract';
         if(options._isConstant) {
@@ -1293,37 +1484,11 @@ export default class TransactionBuilder {
             pathInfo = 'estimateenergy';
         }
 
-        if (pathInfo !== 'triggersmartcontract') {
-            pathInfo = `wallet${options.confirmed ? 'solidity' : ''}/${pathInfo}`;
-            this.tronWeb[options.confirmed ? 'solidityNode' : 'fullNode'].request(pathInfo, args, 'post').then(transaction => resultManagerTriggerSmartContract(transaction, args, options, callback)).catch(err => callback(err));
-        } else {
-            if (args.function_selector) {
-                args.data = keccak256(Buffer.from(args.function_selector, 'utf-8')).toString().substring(2, 10) + args.parameter;
-            }
-            createTransaction(
-                this.tronWeb,
-                'TriggerSmartContract', 
-                {
-                    data: args.data,
-                    owner_address: args.owner_address,
-                    contract_address: args.contract_address,
-                },
-                options.permissionId,
-                {
-                    fee_limit: parseInt(feeLimit),
-                }
-            ).then(transaction => {
-                callback(null, {
-                    result: {
-                        result: true,
-                    },
-                    transaction,
-                })
-            }).catch(err => callback(err));
-        }
+        pathInfo = `wallet${options.confirmed ? 'solidity' : ''}/${pathInfo}`;
+        this.tronWeb[options.confirmed ? 'solidityNode' : 'fullNode'].request(pathInfo, args, 'post').then(transaction => resultManagerTriggerSmartContract(transaction, args, options, callback)).catch(err => callback(err));
     }
 
-    clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, options, callback = false) {     
+    clearABI(contractAddress, ownerAddress = this.tronWeb.defaultAddress.hex, options, callback = false) {
         if (utils.isFunction(options)) {
             callback = options;
             options = {};
@@ -1336,7 +1501,7 @@ export default class TransactionBuilder {
             options = ownerAddress;
             ownerAddress = this.tronWeb.defaultAddress.hex;
         }
-        
+
         if (!callback)
             return this.injectPromise(this.clearABI, contractAddress, ownerAddress, options);
 
@@ -1612,8 +1777,11 @@ export default class TransactionBuilder {
         if (this.validator.notValid([
             {
                 name: 'Name',
-                type: 'not-empty-string',
-                value: accountName
+                type: 'string',
+                lte: 200,
+                gte: 0,
+                value: accountName,
+                msg: 'Invalid accountName'
             },
             {
                 name: 'origin',
@@ -2222,7 +2390,7 @@ export default class TransactionBuilder {
         const data = {
             owner_address: toHex(ownerAddress),
             exchange_id: parseInt(exchangeID),
-            token_id: this.tronWeb.fromAscii(tokenName),
+            token_id: this.tronWeb.fromAscii(tokenName).replace(/^0x/, ''),
             quant: parseInt(tokenAmountSold),
             expected: parseInt(tokenAmountExpected)
         };
@@ -2423,7 +2591,7 @@ export default class TransactionBuilder {
         }
 
         const data = {
-            owner_address: ownerAddress
+            owner_address: toHex(ownerAddress)
         }
         if (ownerPermissions) {
             const _ownerPermissions = deepCopyJson(ownerPermissions);
@@ -2453,20 +2621,53 @@ export default class TransactionBuilder {
             .catch(err => callback(err));
     }
 
-    async newTxID(transaction, callback) {
+    async newTxID(transaction, options, callback) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
 
         if (!callback)
-            return this.injectPromise(this.newTxID, transaction);
+            return this.injectPromise(this.newTxID, transaction, options);
 
-        const contract = transaction.raw_data.contract[0];
-        const tx = await createTransaction(this.tronWeb, contract.type, contract.parameter.value, contract.Permission_id, {
-            fee_limit: transaction.raw_data.fee_limit,
-            data: transaction.raw_data.data,
-            expiration: transaction.raw_data.expiration,
-        }).catch(err => callback('Error generating a new transaction id.'));
-        tx.signature = transaction.signature;
-        tx.visible = transaction.visible;
-        callback(null, tx);
+        if (options?.txLocal) {
+            const contract = transaction.raw_data.contract[0];
+            createTransaction(this.tronWeb, contract.type, contract.parameter.value, contract.Permission_id, {
+                fee_limit: transaction.raw_data.fee_limit,
+                data: transaction.raw_data.data,
+                ref_block_bytes: transaction.raw_data.ref_block_bytes,
+                ref_block_hash: transaction.raw_data.ref_block_hash,
+                expiration: transaction.raw_data.expiration,
+                timestamp: transaction.raw_data.timestamp,
+            }).then((tx) => {
+                tx.signature = transaction.signature;
+                tx.visible = transaction.visible;
+                callback(null, tx);
+            }).catch((err) => callback('Error generating a new transaction id.'));
+            return;
+        }
+
+        this.tronWeb.fullNode
+            .request(
+                'wallet/getsignweight',
+                transaction,
+                'post'
+            )
+            .then(newTransaction => {
+                if (typeof transaction.visible === 'boolean') {
+                    newTransaction.transaction.transaction.visible = transaction.visible
+                }
+                return resultManager(
+                    newTransaction.transaction.transaction,
+                    {
+                        ...transaction.raw_data.contract[0].parameter.value,
+                        Permission_id: transaction.raw_data.contract[0].Permission_id,
+                    },
+                    { data: transaction.raw_data.data, fee_limit: transaction.raw_data.fee_limit },
+                    callback
+                );
+            })
+            .catch(err => callback('Error generating a new transaction id.'));
     }
 
     async alterTransaction(transaction, options = {}, callback = false) {
@@ -2492,27 +2693,39 @@ export default class TransactionBuilder {
             transaction.raw_data.expiration += options.extension;
         }
 
-        this.newTxID(transaction, callback)
+        this.newTxID(transaction, { txLocal: options.txLocal }, callback)
     }
 
-    async extendExpiration(transaction, extension, callback = false) {
+    async extendExpiration(transaction, extension, options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
+
         if (!callback)
-            return this.injectPromise(this.extendExpiration, transaction, extension);
+            return this.injectPromise(this.extendExpiration, transaction, extension, options);
 
-        this.alterTransaction(transaction, {extension}, callback);
+        this.alterTransaction(transaction, {extension, txLocal: options?.txLocal}, callback);
     }
 
-    async addUpdateData(transaction, data, dataFormat = 'utf8', callback = false) {
+    async addUpdateData(transaction, data, dataFormat = 'utf8', options, callback = false) {
+        if (utils.isFunction(options)) {
+            callback = options;
+            options = {};
+        }
 
         if (utils.isFunction(dataFormat)) {
             callback = dataFormat;
             dataFormat = 'utf8';
+        } else if (utils.isObject(dataFormat)) {
+            options = dataFormat;
+            dataFormat = 'utf8';
         }
 
         if (!callback)
-            return this.injectPromise(this.addUpdateData, transaction, data, dataFormat);
+            return this.injectPromise(this.addUpdateData, transaction, data, dataFormat, options);
 
-        this.alterTransaction(transaction, {data, dataFormat}, callback);
+        this.alterTransaction(transaction, {data, dataFormat, txLocal: options?.txLocal}, callback);
     }
 
 }
