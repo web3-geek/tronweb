@@ -2409,7 +2409,7 @@ describe('TronWeb.transactionBuilder', function () {
     describe.only('#setAccountId()', function () {
         it(`should set account id accounts`, async function () {
 
-                const ids = ['abcabc11011abc', 'testtest11', 'jackieshen11011'];
+                const ids = ['abcabc11011ax46c', 'testtestax4611', 'jackieshenax4611011'];
 
                 for (let id of ids) {
                     let accountId = TronWeb.toHex(id);
