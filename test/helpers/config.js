@@ -86,8 +86,8 @@ Djyb5403LJztsxdExbyQkm++Gg631CZus4xA77wMafGw37IhCE6sTBo=
             fullNode: 'https://suntest.tronex.io',
             solidityNode: 'https://suntest.tronex.io',
             eventServer: 'https://suntest.tronex.io',
-            mainGatewayAddress: 'TFLtPoEtVJBMcj6kZPrQrwEdM3W3shxsBU',
-            sideGatewayAddress: 'TRDepx5KoQ8oNbFVZ5sogwUxtdYmATDRgX',
+            mainGatewayAddress: 'TMnf3gpPSv6nQZJ3ZfyA9PyeJ1AbBZtcVd',
+            sideGatewayAddress: 'TJUWaPg9yXvkuBTL5Ucx2V1G6QtThC2Yzq',
             sideChainId: '413AF23F37DA0D48234FDD43D89931E98E1144481B'
         }
     },
