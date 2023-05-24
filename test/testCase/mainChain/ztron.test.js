@@ -12,6 +12,7 @@ const chai = require('chai');
 const util = require('util');
 const assert = chai.assert;
 
+//tronweb not supported any more.
 describe('TronWeb ztron', function() {
     const tronWeb = tronWebBuilder.createInstance();
     let scalingFactor = 10;

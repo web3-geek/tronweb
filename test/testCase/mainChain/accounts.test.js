@@ -497,12 +497,15 @@ describe('TronWeb.utils.accounts', function () {
                     }
                 });
 
+                //errMsg本身返回不稳定，可能出现下面两种情况。
                 it("should throw when params is null", async function () {
                     try {
                         await tronWeb.fromMnemonic()
                     } catch (err) {
                         let errMsg = err.message
-                        assert.notEqual(errMsg.indexOf("Cannot read properties of undefined (reading 'toLowerCase')"), -1)
+                        console.log("errMsg: ",errMsg);
+                        //Cannot read properties of undefined (reading 'toLowerCase')
+                        assert.notEqual(errMsg.indexOf("Cannot read property 'toLowerCase' of undefined"), -1)
                     }
                 });
             });
