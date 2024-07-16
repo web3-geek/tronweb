@@ -988,4 +988,27 @@ const txPbToTxID = (transactionPb) => {
     return txID;
 };
 
-export { txJsonToPb, txPbToTxID, txPbToRawDataHex, txJsonToPbWithArgs, txCheckWithArgs, txCheck };
+const { ContractType } = globalThis.TronWebProto;
+
+const DTriggerSmartContract = (rawDataHex: string) => {
+    const value = getValueFromRawDataHex(rawDataHex);
+    const triggerSmartContract = TriggerSmartContract.deserializeBinary(value);
+    return {
+        ownerAddress: byteArray2hexStr(triggerSmartContract.getOwnerAddress_asU8()),
+        contractAddress: byteArray2hexStr(triggerSmartContract.getContractAddress_asU8()),
+        callValue: triggerSmartContract.getCallValue(),
+        data: byteArray2hexStr(triggerSmartContract.getData_asU8()),
+        callTokenValue: triggerSmartContract.getCallTokenValue(),
+        tokenId: triggerSmartContract.getTokenId(),
+    };
+};
+
+const deserializeRawDataHex = (rawDataHex: string, type = ContractType.TRIGGERSMARTCONTRACT) => {
+    switch (type) {
+        case ContractType.TRIGGERSMARTCONTRACT:
+        default:
+            return DTriggerSmartContract(rawDataHex);
+    }
+};
+
+export { txJsonToPb, txPbToTxID, txPbToRawDataHex, txJsonToPbWithArgs, txCheckWithArgs, txCheck, deserializeRawDataHex };
