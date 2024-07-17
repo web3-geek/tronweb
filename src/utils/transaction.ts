@@ -52,6 +52,7 @@ const { ExchangeCreateContract, ExchangeInjectContract, ExchangeWithdrawContract
     globalThis.TronWebProto;
 
 import { byteArray2hexStr } from './bytes.js';
+import { hexStr2byteArray } from './code.js';
 import { sha256, keccak256 } from './ethersUtils.js';
 import TronWeb from '../tronweb.js';
 import { isHex } from './validations.js';
@@ -989,6 +990,11 @@ const txPbToTxID = (transactionPb) => {
 };
 
 const { ContractType } = globalThis.TronWebProto;
+
+const getValueFromRawDataHex = (rawDataHex: string): Uint8Array => {
+    const pb = Transaction.raw.deserializeBinary(hexStr2byteArray(rawDataHex.replace(/^0x/, '')));
+    return pb.getContractList()[0].getParameter().getValue();
+};
 
 const DTriggerSmartContract = (rawDataHex: string) => {
     const value = getValueFromRawDataHex(rawDataHex);
